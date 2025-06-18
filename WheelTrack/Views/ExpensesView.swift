@@ -9,60 +9,59 @@ public struct ExpensesView: View {
     @State private var selectedTimeRange: TimeRange = .month
     @State private var editingExpense: Expense? = nil
 
+    // ✅ Migration vers système centralisé
+    @EnvironmentObject var localizationService: LocalizationService
+
     public init(viewModel: ExpensesViewModel, vehiclesViewModel: VehiclesViewModel) {
         self.viewModel = viewModel
         self.vehiclesViewModel = vehiclesViewModel
     }
     
     public var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(.systemGroupedBackground)
-                    .ignoresSafeArea()
-                
-                ScrollView {
-                    LazyVStack(spacing: 24) {
-                        // En-tête moderne avec icône
-                        modernHeaderSection
-                        
-                        // Résumé des dépenses modernisé
-                        modernSummarySection
-                        
-                        // Filtres modernes
-                        modernFiltersSection
-                        
-                        // Liste des dépenses ou état vide
-                        if viewModel.filteredExpenses.isEmpty {
-                            modernEmptyStateView
-                        } else {
-                            modernExpensesListSection
-                        }
+        NavigationView {
+            ScrollView {
+                LazyVStack(spacing: 24) {
+                    // En-tête moderne avec icône
+                    modernHeaderSection
+                    
+                    // Résumé des dépenses modernisé
+                    modernSummarySection
+                    
+                    // Filtres modernes
+                    modernFiltersSection
+                    
+                    // Liste des dépenses ou état vide
+                    if viewModel.filteredExpenses.isEmpty {
+                        modernEmptyStateView
+                    } else {
+                        modernExpensesListSection
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
             }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showingAddExpense) {
-                AddExpenseView(vehicles: vehiclesViewModel.vehicles, onAdd: { expense in
-                    viewModel.addExpense(expense)
-                })
-            }
-            .sheet(item: $editingExpense) { expense in
-                EditExpenseView(
-                    expense: expense,
-                    vehicles: vehiclesViewModel.vehicles,
-                    onSave: { updatedExpense in
-                        viewModel.editExpense(updatedExpense)
-                    }
-                )
-            }
+            .background(Color(.systemGroupedBackground))
+        }
+        .sheet(isPresented: $showingAddExpense) {
+            AddExpenseView(vehicles: vehiclesViewModel.vehicles, onAdd: { expense in
+                viewModel.addExpense(expense)
+            })
+        }
+        .sheet(item: $editingExpense) { expense in
+            EditExpenseView(
+                expense: expense,
+                vehicles: vehiclesViewModel.vehicles,
+                onSave: { updatedExpense in
+                    viewModel.editExpense(updatedExpense)
+                }
+            )
         }
         .overlay(alignment: .bottomTrailing) {
-            // Bouton flottant discret uniquement quand il y a des dépenses
+            // Bouton flottant unifié
             if !viewModel.filteredExpenses.isEmpty {
-                Button(action: { showingAddExpense = true }) {
+                Button(action: {
+                    showingAddExpense = true
+                }) {
                     Image(systemName: "plus")
                         .font(.title2)
                         .fontWeight(.semibold)
@@ -78,6 +77,8 @@ public struct ExpensesView: View {
                         .clipShape(Circle())
                         .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
+                .accessibilityLabel(L(CommonTranslations.addExpense))
+                .accessibilityHint("Touchez pour ouvrir le formulaire d'ajout de dépense")
                 .padding(.trailing, 20)
                 .padding(.bottom, 30)
             }
@@ -109,12 +110,12 @@ public struct ExpensesView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Mes Dépenses")
+                            Text(L(CommonTranslations.myExpenses))
                                 .font(.largeTitle)
                                 .fontWeight(.bold)
                                 .foregroundColor(.primary)
                             
-                            Text("Gérez tous vos frais de véhicules")
+                            Text(L(CommonTranslations.manageVehicleCosts))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -131,7 +132,7 @@ public struct ExpensesView: View {
             VStack(spacing: 20) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Total des dépenses")
+                        Text(L(CommonTranslations.totalExpenses))
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.secondary)
@@ -150,7 +151,7 @@ public struct ExpensesView: View {
                                 .fontWeight(.bold)
                                 .foregroundColor(.blue)
                             
-                            Text(viewModel.filteredExpenses.count > 1 ? "dépenses" : "dépense")
+                            Text(viewModel.filteredExpenses.count > 1 ? L(CommonTranslations.expenses) : L(CommonTranslations.expense))
                                 .font(.caption)
                                 .fontWeight(.medium)
                                 .foregroundColor(.secondary)
@@ -161,7 +162,7 @@ public struct ExpensesView: View {
                 // Statistiques par catégorie
                 if !categoryStats.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Répartition par catégorie")
+                        Text(L(CommonTranslations.categoryDistribution))
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -233,19 +234,19 @@ public struct ExpensesView: View {
             
             // Filtres par catégorie
             VStack(alignment: .leading, spacing: 12) {
-                Text("Catégories")
+                Text(L(CommonTranslations.categories))
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        ForEach(ExpenseFilter.allCases) { filter in
-                            FilterChip(
-                                title: filter.rawValue,
-                                isSelected: viewModel.selectedFilter == filter,
-                                color: .blue
-                            ) {
+                                            ForEach(ExpenseFilter.allCases) { filter in
+                        FilterChip(
+                            title: filter.localizedName(language: localizationService.currentLanguage),
+                            isSelected: viewModel.selectedFilter == filter,
+                            color: .blue
+                        ) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     viewModel.selectedFilter = filter
                                 }
@@ -258,7 +259,7 @@ public struct ExpensesView: View {
             
             // Sélecteur de période
             VStack(alignment: .leading, spacing: 12) {
-                Text("Période")
+                Text(L(CommonTranslations.period))
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -267,7 +268,7 @@ public struct ExpensesView: View {
                     HStack(spacing: 12) {
                         ForEach(TimeRange.allCases) { range in
                             FilterChip(
-                                title: range.rawValue,
+                                title: range.localizedName(language: localizationService.currentLanguage),
                                 isSelected: viewModel.selectedTimeRange == range,
                                 color: .blue
                             ) {
@@ -285,7 +286,7 @@ public struct ExpensesView: View {
     
     private var modernExpensesListSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Toutes les dépenses")
+            Text(L(CommonTranslations.allExpenses))
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
@@ -328,12 +329,12 @@ public struct ExpensesView: View {
                 }
                 
                 VStack(spacing: 12) {
-                    Text("Aucune dépense trouvée")
+                    Text(L(CommonTranslations.noExpensesFound))
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     
-                    Text("Vos dépenses apparaîtront ici.\nAjoutez votre première dépense pour commencer.")
+                    Text(L(CommonTranslations.expensesWillAppearHere))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -345,7 +346,7 @@ public struct ExpensesView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 16))
-                    Text("Ajouter une dépense")
+                    Text(L(CommonTranslations.addExpense))
                         .fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
@@ -399,6 +400,7 @@ struct ExpenseRowView: View {
     let onEdit: (Expense) -> Void
     let onDelete: (Expense) -> Void
     @State private var showDeleteAlert = false
+    @EnvironmentObject var localizationService: LocalizationService
     
     var body: some View {
         VStack(spacing: 16) {
@@ -440,10 +442,10 @@ struct ExpenseRowView: View {
                             
                             Menu {
                                 Button(action: { onEdit(expense) }) {
-                                    Label("Modifier", systemImage: "pencil")
+                                    Label(L(CommonTranslations.edit), systemImage: "pencil")
                                 }
                                 Button(role: .destructive, action: { showDeleteAlert = true }) {
-                                    Label("Supprimer", systemImage: "trash")
+                                    Label(L(CommonTranslations.delete), systemImage: "trash")
                                 }
                             } label: {
                                 Image(systemName: "ellipsis.circle")
@@ -479,16 +481,16 @@ struct ExpenseRowView: View {
         )
         .alert(isPresented: $showDeleteAlert) {
             Alert(
-                title: Text("Supprimer la dépense ?"),
-                message: Text("Cette action est irréversible."),
-                primaryButton: .destructive(Text("Supprimer")) { onDelete(expense) },
+                title: Text(L(CommonTranslations.deleteExpenseTitle)),
+                message: Text(L(CommonTranslations.deleteExpenseAlertMessage)),
+                primaryButton: .destructive(Text(L(CommonTranslations.delete))) { onDelete(expense) },
                 secondaryButton: .cancel()
             )
         }
     }
     
     private var vehicleName: String {
-        vehicles.first { $0.id == expense.vehicleId }?.brand ?? "Véhicule inconnu"
+        vehicles.first { $0.id == expense.vehicleId }?.brand ?? L(CommonTranslations.unknownVehicle)
     }
     
     private var colorForCategory: Color {

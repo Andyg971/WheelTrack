@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct WheelTrackApp: App {
+    @StateObject private var localizationService = LocalizationService.shared
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(localizationService)
         }
     }
 }

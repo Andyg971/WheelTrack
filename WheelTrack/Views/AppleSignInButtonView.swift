@@ -10,9 +10,9 @@ struct AppleSignInButtonView: View {
     var body: some View {
         VStack(spacing: 20) {
             if isSignedIn {
-                Text("Connecté avec Apple !")
+                Text(L(CommonTranslations.connectedWithApple))
                     .font(.headline)
-                Button("Se déconnecter") {
+                Button(L(CommonTranslations.signOut)) {
                     AppleSignInService.shared.userIdentifier = nil
                     isSignedIn = false
                 }
@@ -29,7 +29,7 @@ struct AppleSignInButtonView: View {
                             if let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential {
                                 AppleSignInService.shared.userIdentifier = appleIDCredential.user
                                 isSignedIn = true
-                                signInStatus = "Connexion réussie !"
+                                signInStatus = L(CommonTranslations.connectionSuccessful)
                             }
                         case .failure(let error):
                             signInStatus = "Erreur : \(error.localizedDescription)"
@@ -47,7 +47,7 @@ struct AppleSignInButtonView: View {
         }
         .padding()
         .alert(isPresented: $showAlert) {
-            Alert(title: Text("Erreur de connexion"), message: Text(signInStatus), dismissButton: .default(Text("OK")))
+            Alert(title: Text(L(CommonTranslations.connectionError)), message: Text(signInStatus), dismissButton: .default(Text(L(CommonTranslations.ok))))
         }
     }
 }

@@ -19,21 +19,21 @@ struct GarageDetailSheet: View {
                 }) {
                     Image(systemName: garage.isFavorite ? "star.fill" : "star")
                         .foregroundColor(.yellow)
-                        .accessibilityLabel(garage.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris")
+                        .accessibilityLabel(garage.isFavorite ? L(CommonTranslations.removeFromFavorites) : L(CommonTranslations.addToFavorites))
                 }
             }
             // Adresse et ville
             Text(garage.adresse)
             Text(garage.ville)
             // Téléphone
-            Text("Téléphone : \(garage.telephone)")
+            Text("\(L(CommonTranslations.phone)) \(garage.telephone)")
             // Services
-            Text("Services : \(garage.services.joined(separator: ", "))")
+            Text("\(L(CommonTranslations.services)) \(garage.services.joined(separator: ", "))")
             // Horaires
-            Text("Horaires : \(garage.horaires)")
+            Text("\(L(CommonTranslations.hours)) \(garage.horaires)")
             // Bouton appel
             Button(action: callGarage) {
-                Label("Appeler", systemImage: "phone.fill")
+                Label(L(CommonTranslations.call), systemImage: "phone.fill")
                     .padding()
                     .frame(maxWidth: .infinity)
                     .background(Color.green)
@@ -42,7 +42,7 @@ struct GarageDetailSheet: View {
             }
             // Bouton itinéraire
             Button(action: openInMaps) {
-                Label("Itinéraire dans Plans", systemImage: "map")
+                Label(L(CommonTranslations.directions), systemImage: "map")
                     .padding()
                     .frame(maxWidth: .infinity)
                     .background(Color.blue)

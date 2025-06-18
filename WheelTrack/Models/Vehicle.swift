@@ -33,6 +33,11 @@ public struct Vehicle: Codable, Identifiable {
     // Informations de location
     public var isAvailableForRent: Bool = false
     public var rentalPrice: Double?
+    public var depositAmount: Double? // Caution
+    public var minimumRentalDays: Int? // Durée minimum de location
+    public var maximumRentalDays: Int? // Durée maximum de location
+    public var vehicleDescription: String? // Description pour les locataires
+    public var privateNotes: String? // Notes privées
     
     // Statut du véhicule
     public var isActive: Bool = true

@@ -38,7 +38,7 @@ class GarageService {
     }
     
     func deleteGarage(_ garage: Garage) {
-        // À implémenter dans DataManager
+        // À implémenter dans DataManager  
         // dataManager.deleteGarage(garage)
     }
     

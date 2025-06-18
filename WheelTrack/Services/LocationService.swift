@@ -16,39 +16,110 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     override init() {
         super.init()
+        print("🏗️ LocationService: Initialisation...")
         setupLocationManager()
     }
     
     // MARK: - Configuration
     
     private func setupLocationManager() {
+        print("🔧 LocationService: Configuration du CLLocationManager...")
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 10 // Se met à jour tous les 10 mètres
-        authorizationStatus = locationManager.authorizationStatus
+        locationManager.distanceFilter = 10
+        
+        // Vérification du statut initial sur background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            let initialStatus = self.locationManager.authorizationStatus
+            let servicesEnabled = CLLocationManager.locationServicesEnabled()
+            
+            DispatchQueue.main.async {
+                print("📊 Statut initial: \(initialStatus.rawValue) (\(self.statusDescription(initialStatus)))")
+                print("🌍 Services de localisation activés: \(servicesEnabled)")
+                self.authorizationStatus = initialStatus
+            }
+        }
+        
+        print("✅ LocationManager configuré avec succès")
     }
     
-    // MARK: - Méthodes publiques simples
+    // MARK: - Diagnostic
     
-    /// Demande l'autorisation comme dans Maps
+    private func statusDescription(_ status: CLAuthorizationStatus) -> String {
+        switch status {
+        case .notDetermined: return "Non déterminé"
+        case .denied: return "Refusé"
+        case .restricted: return "Restreint"
+        case .authorizedWhenInUse: return "Autorisé pendant utilisation"
+        case .authorizedAlways: return "Toujours autorisé"
+        @unknown default: return "Statut inconnu"
+        }
+    }
+    
+    // MARK: - Méthodes publiques
+    
+    /// Demande l'autorisation avec diagnostic complet
     func requestLocationPermission() {
-        print("🔐 Demande d'autorisation de géolocalisation - Statut actuel: \(authorizationStatus)")
+        print("\n🔐 === DEMANDE D'AUTORISATION DE GÉOLOCALISATION ===")
+        print("📱 Thread actuel: \(Thread.isMainThread ? "Main" : "Background")")
+        print("📊 Statut actuel: \(authorizationStatus.rawValue) (\(statusDescription(authorizationStatus)))")
+        print("📊 Statut CLLocationManager: \(locationManager.authorizationStatus.rawValue)")
         
-        switch authorizationStatus {
+        // Vérification critique : Services de localisation sur background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            let servicesEnabled = CLLocationManager.locationServicesEnabled()
+            
+            DispatchQueue.main.async {
+                print("🌍 Services de localisation: \(servicesEnabled)")
+                
+                guard servicesEnabled else {
+                    print("❌ ERREUR CRITIQUE: Services de localisation désactivés sur l'appareil!")
+                    self.locationError = "Services de localisation désactivés. Allez dans Réglages > Confidentialité > Localisation."
+                    return
+                }
+                
+                // Synchronisation du statut
+                let currentStatus = self.locationManager.authorizationStatus
+                if currentStatus != self.authorizationStatus {
+                    print("⚠️ Synchronisation du statut: \(self.authorizationStatus.rawValue) → \(currentStatus.rawValue)")
+                    self.authorizationStatus = currentStatus
+                }
+                
+                self.handleAuthorizationRequest(for: currentStatus)
+            }
+        }
+    }
+    
+    /// Gère la demande d'autorisation selon le statut
+    private func handleAuthorizationRequest(for status: CLAuthorizationStatus) {
+        switch status {
         case .notDetermined:
-            print("📍 Première demande d'autorisation")
+            print("🚀 PREMIÈRE DEMANDE - La pop-up VA s'afficher maintenant!")
+            print("📱 Appel de requestWhenInUseAuthorization()...")
+            
+            // APPEL CRITIQUE : Doit être sur le main thread
             locationManager.requestWhenInUseAuthorization()
-        case .denied, .restricted:
-            print("❌ Autorisation refusée - Redirection vers les réglages")
-            locationError = "Allez dans Réglages > Confidentialité et sécurité > Localisation > WheelTrack pour autoriser l'accès"
+            print("✅ requestWhenInUseAuthorization() appelé depuis le Main Thread")
+            
+        case .denied:
+            print("❌ AUTORISATION REFUSÉE - Redirection vers réglages")
+            self.locationError = "Géolocalisation refusée. Allez dans Réglages > Confidentialité > Localisation > WheelTrack."
             openLocationSettings()
+            
+        case .restricted:
+            print("🚫 AUTORISATION RESTREINTE")
+            self.locationError = "L'accès à la localisation est restreint sur cet appareil."
+            
         case .authorizedWhenInUse, .authorizedAlways:
-            print("✅ Déjà autorisé - Démarrage de la géolocalisation")
+            print("✅ DÉJÀ AUTORISÉ - Démarrage géolocalisation")
             getCurrentLocation()
+            
         @unknown default:
-            print("❓ Statut inconnu")
+            print("STATUT INCONNU - Tentative de demande d'autorisation")
             locationManager.requestWhenInUseAuthorization()
         }
+        
+        print("🔐 === FIN DEMANDE D'AUTORISATION ===\n")
     }
     
     /// Obtient la position actuelle (comme le bouton "Ma position" dans Maps)
@@ -65,14 +136,15 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
         isUpdatingLocation = true
         locationError = nil
         
-        // Demande une position ponctuelle précise
-        locationManager.requestLocation()
+        // Demande une position avec suivi continu pour que iOS comprenne que l'app utilise activement la géolocalisation
+        locationManager.startUpdatingLocation()
         
         // Timeout de sécurité
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
             if self.isUpdatingLocation {
                 self.isUpdatingLocation = false
                 self.locationError = "Délai d'attente dépassé - Réessayez"
+                self.locationManager.stopUpdatingLocation()
                 print("⏰ Timeout de géolocalisation")
             }
         }
@@ -151,12 +223,14 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
             self.currentLocation = location
             self.isUpdatingLocation = false
             self.locationError = nil
+            
+            // Notifier les autres composants que la localisation a été mise à jour
+            NotificationCenter.default.post(name: NSNotification.Name("LocationUpdated"), object: location)
+            print("📡 Notification LocationUpdated envoyée")
         }
         
-        // Arrête automatiquement si on demandait juste une position
-        if !isUpdatingLocation {
-            locationManager.stopUpdatingLocation()
-        }
+        // Arrête le suivi après avoir reçu une position pour getCurrentLocation
+        locationManager.stopUpdatingLocation()
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -181,12 +255,52 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        DispatchQueue.main.async {
-            self.authorizationStatus = status
+        print("\n🔄 === CHANGEMENT D'AUTORISATION DÉTECTÉ ===")
+        print("📱 Thread: \(Thread.isMainThread ? "Main" : "Background")")
+        print("📊 Nouveau statut: \(status.rawValue) (\(statusDescription(status)))")
+        print("📊 Ancien statut: \(authorizationStatus.rawValue) (\(statusDescription(authorizationStatus)))")
+        
+        // Vérification des services sur background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            let servicesEnabled = CLLocationManager.locationServicesEnabled()
             
-            // Auto-démarrage si l'autorisation est accordée
-            if status == .authorizedWhenInUse || status == .authorizedAlways {
-                self.getCurrentLocation()
+            DispatchQueue.main.async {
+                print("🌍 Services activés: \(servicesEnabled)")
+                self.authorizationStatus = status
+                
+                switch status {
+                case .notDetermined:
+                    print("Statut: Non déterminé - En attente de décision utilisateur")
+                    
+                case .denied:
+                    print("❌ AUTORISATION REFUSÉE par l'utilisateur")
+                    self.isUpdatingLocation = false
+                    self.locationError = "Accès à la localisation refusé. Allez dans Réglages > Confidentialité > Localisation > WheelTrack pour autoriser l'accès."
+                    
+                case .restricted:
+                    print("🚫 AUTORISATION RESTREINTE par restrictions parentales")
+                    self.isUpdatingLocation = false
+                    self.locationError = "L'accès à la localisation est restreint sur cet appareil."
+                    
+                case .authorizedWhenInUse:
+                    print("✅ AUTORISATION ACCORDÉE - Pendant utilisation de l'app")
+                    self.locationError = nil
+                    print("🚀 Démarrage automatique de la géolocalisation...")
+                    self.getCurrentLocation()
+                    
+                case .authorizedAlways:
+                    print("✅ AUTORISATION TOUJOURS ACCORDÉE - En permanence")
+                    self.locationError = nil
+                    print("🚀 Démarrage automatique de la géolocalisation...")
+                    self.getCurrentLocation()
+                    
+                @unknown default:
+                    print("STATUT INCONNU: \(status.rawValue)")
+                    self.isUpdatingLocation = false
+                    self.locationError = "Statut d'autorisation inconnu"
+                }
+                
+                print("🔄 === FIN CHANGEMENT D'AUTORISATION ===\n")
             }
         }
     }

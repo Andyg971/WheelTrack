@@ -84,28 +84,8 @@ struct ModernSearchBar: View {
     }
 }
 
-// MARK: - ModernCard Component
-struct ModernCard<Content: View>: View {
-    let content: Content
-    let padding: CGFloat
-    let cornerRadius: CGFloat
-    
-    init(padding: CGFloat = 20, cornerRadius: CGFloat = 16, @ViewBuilder content: () -> Content) {
-        self.content = content()
-        self.padding = padding
-        self.cornerRadius = cornerRadius
-    }
-    
-    var body: some View {
-        content
-            .padding(padding)
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-            )
-    }
-}
+// MARK: - ModernCard Component (Deprecated - Use WheelTrack/Views/Components/ModernCard.swift)
+// Ce composant est maintenant unifié dans ModernCard.swift
 
 // MARK: - ModernHeaderIcon Component
 struct ModernHeaderIcon: View {
@@ -215,9 +195,12 @@ struct ModernEmptyStateView: View {
             FilterChip(title: "Récents", isSelected: false, color: .blue) {}
         }
         
-        ModernCard {
-            Text("Contenu de la carte")
-        }
+        // Exemple simple sans ModernCard
+        Text("Contenu de la carte")
+            .padding()
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
     }
     .padding()
 } 

@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct VehicleDetailView: View {
     let vehicle: Vehicle
@@ -7,6 +8,51 @@ struct VehicleDetailView: View {
     @State private var selectedTab: VehicleDetailTab = .info
     @State private var showingAddMaintenance = false
     @State private var showingAddExpense = false
+    @AppStorage("app_language") private var appLanguage = "fr"
+    
+    // Fonction de localisation
+    static func localText(_ key: String, language: String) -> String {
+        switch key {
+        case "add_maintenance":
+            return language == "en" ? "Add Maintenance" : "Ajouter une maintenance"
+        case "add_expense":
+            return language == "en" ? "Add Expense" : "Ajouter une dépense"
+        case "no_maintenance":
+            return language == "en" ? "No maintenance" : "Aucune maintenance"
+        case "no_expense":
+            return language == "en" ? "No expense" : "Aucune dépense"
+        case "active":
+            return language == "en" ? "Active" : "Actif"
+        case "inactive":
+            return language == "en" ? "Inactive" : "Inactif"
+        case "maintenance_summary":
+            return language == "en" ? "Maintenance Summary" : "Résumé maintenance"
+        case "expense_summary":
+            return language == "en" ? "Expense Summary" : "Résumé dépenses"
+        case "total_maintenances":
+            return language == "en" ? "Total maintenances" : "Total maintenances"
+        case "total_amount":
+            return language == "en" ? "Total amount" : "Montant total"
+        case "total_expenses":
+            return language == "en" ? "Total expenses" : "Total dépenses"
+        case "rental_summary":
+            return language == "en" ? "Rental Summary" : "Résumé location"
+        case "total_contracts":
+            return language == "en" ? "Total contracts" : "Total contrats"
+        case "active_contracts":
+            return language == "en" ? "Active contracts" : "Contrats actifs"
+        case "total_revenue":
+            return language == "en" ? "Total revenue" : "Revenus totaux"
+        case "no_rental_contract":
+            return language == "en" ? "No rental contract" : "Aucun contrat de location"
+        case "create_first_contract":
+            return language == "en" ? "Start by creating your first contract" : "Commencez par créer votre premier contrat"
+        case "create_contract":
+            return language == "en" ? "Create Contract" : "Créer un contrat"
+        default:
+            return key
+        }
+    }
     
     init(vehicle: Vehicle, expensesViewModel: ExpensesViewModel, maintenanceViewModel: MaintenanceViewModel) {
         self.vehicle = vehicle
@@ -41,6 +87,9 @@ struct VehicleDetailView: View {
                         onAddExpense: { showingAddExpense = true }
                     )
                     .tag(VehicleDetailTab.expenses)
+                    
+                    VehicleRentalTabView(vehicle: vehicle)
+                        .tag(VehicleDetailTab.rental)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             }
@@ -106,7 +155,7 @@ struct VehicleDetailView: View {
                             .fill(vehicle.isActive ? Color.green : Color.gray)
                             .frame(width: 8, height: 8)
                         
-                        Text(vehicle.isActive ? "Actif" : "Inactif")
+                        Text(vehicle.isActive ? VehicleDetailView.localText("active", language: appLanguage) : VehicleDetailView.localText("inactive", language: appLanguage))
                             .font(.caption)
                             .foregroundColor(vehicle.isActive ? .green : .gray)
                     }
@@ -124,6 +173,9 @@ struct VehicleDetailView: View {
     private var tabPickerView: some View {
         HStack(spacing: 0) {
             ForEach(VehicleDetailTab.allCases, id: \.self) { tab in
+                let isSelected = selectedTab == tab
+                let color = tab == .maintenance ? Color.orange : Color.blue
+                
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         selectedTab = tab
@@ -132,22 +184,22 @@ struct VehicleDetailView: View {
                     VStack(spacing: 8) {
                         Image(systemName: tab.icon)
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(selectedTab == tab ? .blue : .secondary)
+                            .foregroundColor(isSelected ? color : .secondary)
                         
                         Text(tab.title)
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundColor(selectedTab == tab ? .blue : .secondary)
+                            .foregroundColor(isSelected ? color : .secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(
                         Rectangle()
-                            .fill(selectedTab == tab ? Color.blue.opacity(0.1) : Color.clear)
+                            .fill(isSelected ? color.opacity(0.1) : Color.clear)
                     )
                     .overlay(
                         Rectangle()
-                            .fill(selectedTab == tab ? Color.blue : Color.clear)
+                            .fill(isSelected ? color : Color.clear)
                             .frame(height: 2),
                         alignment: .bottom
                     )
@@ -187,12 +239,14 @@ enum VehicleDetailTab: CaseIterable {
     case info
     case maintenance
     case expenses
+    case rental
     
     var title: String {
         switch self {
         case .info: return "Infos"
         case .maintenance: return "Maintenance"
         case .expenses: return "Dépenses"
+        case .rental: return "Location"
         }
     }
     
@@ -201,6 +255,7 @@ enum VehicleDetailTab: CaseIterable {
         case .info: return "info.circle"
         case .maintenance: return "wrench"
         case .expenses: return "dollarsign.circle"
+        case .rental: return "key.fill"
         }
     }
 }
@@ -214,21 +269,21 @@ struct VehicleInfoTabView: View {
         ScrollView {
             LazyVStack(spacing: 20) {
                 // Informations générales
-                InfoCard(title: "Informations générales") {
+                VehicleInfoCard(title: "Informations générales") {
                     VStack(spacing: 12) {
-                        InfoRow(label: "Plaque d'immatriculation", value: vehicle.licensePlate)
-                        InfoRow(label: "Couleur", value: vehicle.color)
-                        InfoRow(label: "Transmission", value: vehicle.transmission.rawValue)
-                        InfoRow(label: "Kilométrage", value: "\(Int(vehicle.mileage).formatted()) km")
+                        VehicleInfoRow(label: "Plaque d'immatriculation", value: vehicle.licensePlate)
+                        VehicleInfoRow(label: "Couleur", value: vehicle.color)
+                        VehicleInfoRow(label: "Transmission", value: vehicle.transmission.rawValue)
+                        VehicleInfoRow(label: "Kilométrage", value: "\(Int(vehicle.mileage).formatted()) km")
                     }
                 }
                 
                 // Informations d'achat
-                InfoCard(title: "Achat") {
+                VehicleInfoCard(title: "Achat") {
                     VStack(spacing: 12) {
-                        InfoRow(label: "Date d'achat", value: vehicle.purchaseDate.formatted(date: .abbreviated, time: .omitted))
-                        InfoRow(label: "Prix d'achat", value: String(format: "%.2f €", vehicle.purchasePrice))
-                        InfoRow(label: "Kilométrage à l'achat", value: "\(Int(vehicle.purchaseMileage).formatted()) km")
+                        VehicleInfoRow(label: "Date d'achat", value: vehicle.purchaseDate.formatted(date: .abbreviated, time: .omitted))
+                        VehicleInfoRow(label: "Prix d'achat", value: String(format: "%.2f €", vehicle.purchasePrice))
+                        VehicleInfoRow(label: "Kilométrage à l'achat", value: "\(Int(vehicle.purchaseMileage).formatted()) km")
                     }
                 }
             }
@@ -244,6 +299,7 @@ struct VehicleMaintenanceTabView: View {
     let vehicle: Vehicle
     @ObservedObject var maintenanceViewModel: MaintenanceViewModel
     let onAddMaintenance: () -> Void
+    @AppStorage("app_language") private var appLanguage = "fr"
     
     private var vehicleMaintenances: [Maintenance] {
         maintenanceViewModel.maintenances.filter { maintenance in
@@ -255,10 +311,10 @@ struct VehicleMaintenanceTabView: View {
         ScrollView {
             LazyVStack(spacing: 20) {
                 // Résumé des maintenances
-                InfoCard(title: "Résumé maintenance") {
+                VehicleInfoCard(title: VehicleDetailView.localText("maintenance_summary", language: appLanguage)) {
                     VStack(spacing: 12) {
                         HStack {
-                            Text("Total maintenances")
+                            Text(VehicleDetailView.localText("total_maintenances", language: appLanguage))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -268,7 +324,7 @@ struct VehicleMaintenanceTabView: View {
                         }
                         
                         HStack {
-                            Text("Coût total")
+                            Text(VehicleDetailView.localText("total_amount", language: appLanguage))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -286,11 +342,11 @@ struct VehicleMaintenanceTabView: View {
                             .font(.system(size: 48))
                             .foregroundColor(.orange.opacity(0.6))
                         
-                        Text("Aucune maintenance")
+                        Text(VehicleDetailView.localText("no_maintenance", language: appLanguage))
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Button("Ajouter une maintenance", action: onAddMaintenance)
+                        Button(VehicleDetailView.localText("add_maintenance", language: appLanguage), action: onAddMaintenance)
                             .buttonStyle(.borderedProminent)
                             .tint(.orange)
                     }
@@ -313,6 +369,7 @@ struct VehicleExpensesTabView: View {
     let vehicle: Vehicle
     @ObservedObject var expensesViewModel: ExpensesViewModel
     let onAddExpense: () -> Void
+    @AppStorage("app_language") private var appLanguage = "fr"
     
     private var vehicleExpenses: [Expense] {
         expensesViewModel.expenses.filter { $0.vehicleId == vehicle.id }
@@ -323,10 +380,10 @@ struct VehicleExpensesTabView: View {
         ScrollView {
             LazyVStack(spacing: 20) {
                 // Résumé des dépenses
-                InfoCard(title: "Résumé dépenses") {
+                VehicleInfoCard(title: VehicleDetailView.localText("expense_summary", language: appLanguage)) {
                     VStack(spacing: 12) {
                         HStack {
-                            Text("Total dépenses")
+                            Text(VehicleDetailView.localText("total_expenses", language: appLanguage))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -336,7 +393,7 @@ struct VehicleExpensesTabView: View {
                         }
                         
                         HStack {
-                            Text("Montant total")
+                            Text(VehicleDetailView.localText("total_amount", language: appLanguage))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -354,11 +411,11 @@ struct VehicleExpensesTabView: View {
                             .font(.system(size: 48))
                             .foregroundColor(.blue.opacity(0.6))
                         
-                        Text("Aucune dépense")
+                        Text(VehicleDetailView.localText("no_expense", language: appLanguage))
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Button("Ajouter une dépense", action: onAddExpense)
+                        Button(VehicleDetailView.localText("add_expense", language: appLanguage), action: onAddExpense)
                             .buttonStyle(.borderedProminent)
                             .tint(.blue)
                     }
@@ -380,9 +437,125 @@ struct VehicleExpensesTabView: View {
     }
 }
 
+// MARK: - Rental Tab View
+
+struct VehicleRentalTabView: View {
+    let vehicle: Vehicle
+    private var rentalService: RentalService { RentalService.shared }
+    @State private var showingAddRental = false
+    @AppStorage("app_language") private var appLanguage = "fr"
+    
+    private var vehicleContracts: [RentalContract] {
+        rentalService.getRentalContracts(for: vehicle.id).sorted { $0.startDate > $1.startDate }
+    }
+    
+    private var activeContracts: [RentalContract] {
+        vehicleContracts.filter { $0.isActive() }
+    }
+    
+    private var upcomingContracts: [RentalContract] {
+        let now = Date()
+        return vehicleContracts.filter { $0.startDate > now }
+    }
+    
+    private var totalRevenue: Double {
+        vehicleContracts.reduce(0) { $0 + $1.totalPrice }
+    }
+    
+    var body: some View {
+        ScrollView {
+            LazyVStack(spacing: 20) {
+                // Résumé des locations
+                VehicleInfoCard(title: VehicleDetailView.localText("rental_summary", language: appLanguage)) {
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text(VehicleDetailView.localText("total_contracts", language: appLanguage))
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("\(vehicleContracts.count)")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                        
+                        HStack {
+                            Text(VehicleDetailView.localText("active_contracts", language: appLanguage))
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("\(activeContracts.count)")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
+                        }
+                        
+                        HStack {
+                            Text(VehicleDetailView.localText("total_revenue", language: appLanguage))
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text(String(format: "%.2f €", totalRevenue))
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                
+                // Liste des contrats
+                if vehicleContracts.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "key.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.blue.opacity(0.6))
+                        
+                        Text(VehicleDetailView.localText("no_rental_contract", language: appLanguage))
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text(VehicleDetailView.localText("create_first_contract", language: appLanguage))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        Button(VehicleDetailView.localText("create_contract", language: appLanguage), action: { showingAddRental = true })
+                            .buttonStyle(.borderedProminent)
+                            .tint(.blue)
+                    }
+                    .padding(40)
+                } else {
+                    ForEach(vehicleContracts) { contract in
+                        RentalContractCard(contract: contract, vehicle: vehicle, statusColor: getStatusColor(for: contract))
+                    }
+                }
+            }
+            .padding(20)
+        }
+        .background(Color(.systemGroupedBackground))
+        .sheet(isPresented: $showingAddRental) {
+            AddRentalContractView(vehicle: vehicle)
+        }
+    }
+    
+    private func getStatusColor(for contract: RentalContract) -> Color {
+        if contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty {
+            return .orange
+        }
+        
+        switch contract.getStatus() {
+        case "Actif":
+            return .green
+        case "À venir":
+            return .blue
+        default:
+            return .gray
+        }
+    }
+}
+
 // MARK: - Supporting Views
 
-struct InfoCard<Content: View>: View {
+struct VehicleInfoCard<Content: View>: View {
     let title: String
     let content: Content
     
@@ -407,7 +580,7 @@ struct InfoCard<Content: View>: View {
     }
 }
 
-struct InfoRow: View {
+struct VehicleInfoRow: View {
     let label: String
     let value: String
     
@@ -469,6 +642,137 @@ struct MaintenanceRowView: View {
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+}
+
+struct RentalContractCard: View {
+    let contract: RentalContract
+    let vehicle: Vehicle
+    let statusColor: Color
+    
+    private var isPrefilledContract: Bool {
+        contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+    
+    private var statusText: String {
+        if isPrefilledContract {
+            return "À compléter"
+        }
+        return contract.getStatus()
+    }
+    
+    private var formattedDateRange: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return "\(formatter.string(from: contract.startDate)) - \(formatter.string(from: contract.endDate))"
+    }
+    
+    var body: some View {
+        NavigationLink(destination: RentalContractDetailView(contract: contract, vehicle: vehicle)) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if isPrefilledContract {
+                            Text("Contrat à compléter")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.orange)
+                        } else {
+                            Text(contract.renterName)
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                        }
+                        
+                        Text(statusText)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(statusColor)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(String(format: "%.0f €", contract.totalPrice))
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.green)
+                        
+                        if isPrefilledContract {
+                            HStack(spacing: 8) {
+                                Text("Prêt")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color.orange)
+                                    .clipShape(Capsule())
+                            }
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.title3)
+                                .foregroundColor(statusColor)
+                        }
+                    }
+                }
+                
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                        
+                        Text(formattedDateRange)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text("\(contract.numberOfDays) jour\(contract.numberOfDays > 1 ? "s" : "")")
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color(.systemGray5))
+                            .clipShape(Capsule())
+                    }
+                    
+                    HStack {
+                        Image(systemName: "eurosign.circle")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                        
+                        Text("\(String(format: "%.0f", contract.pricePerDay))€/jour")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        if isPrefilledContract {
+                            Text("À compléter")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isPrefilledContract ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
