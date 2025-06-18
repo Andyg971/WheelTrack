@@ -305,6 +305,32 @@ struct CommonTranslations {
     static let professionalInformation = ("Informations professionnelles", "Professional Information")
     static let financialSettings = ("Paramètres financiers", "Financial Settings")
     static let preferences = ("Préférences", "Preferences")
+    
+    // MARK: - Tutorial translations
+    
+    // Tutorial - Page titles
+    static let tutorialWelcomeTitle = ("Bienvenue dans WheelTrack", "Welcome to WheelTrack")
+    static let tutorialVehiclesTitle = ("Gérez vos véhicules", "Manage your vehicles")
+    static let tutorialFinancesTitle = ("Suivez vos finances", "Track your finances")
+    static let tutorialCloudTitle = ("Synchronisation CloudKit", "CloudKit Sync")
+    
+    // Tutorial - Page subtitles
+    static let tutorialWelcomeSubtitle = ("Votre assistant personnel pour gérer vos véhicules et leurs coûts", "Your personal assistant for managing your vehicles and their costs")
+    static let tutorialVehiclesSubtitle = ("Ajoutez vos véhicules, programmez leurs maintenances et suivez leur historique", "Add your vehicles, schedule their maintenance and track their history")
+    static let tutorialFinancesSubtitle = ("Analysez vos dépenses avec des graphiques détaillés et des statistiques avancées", "Analyze your expenses with detailed charts and advanced statistics")
+    static let tutorialCloudSubtitle = ("Vos données sont automatiquement synchronisées sur tous vos appareils Apple", "Your data is automatically synced across all your Apple devices")
+    
+    // Tutorial - Descriptions
+    static let tutorialWelcomeDescription = ("Découvrez toutes les fonctionnalités qui vous permettront de maîtriser vos coûts automobiles", "Discover all the features that will help you master your automotive costs")
+    static let tutorialVehiclesDescription = ("• Garage virtuel avec photos\n• Alertes de maintenance\n• Historique complet\n• Gestion des contrats", "• Virtual garage with photos\n• Maintenance alerts\n• Complete history\n• Contract management")
+    static let tutorialFinancesDescription = ("• Catégorisation automatique\n• Graphiques interactifs\n• Analyses de tendances\n• Rapports détaillés", "• Automatic categorization\n• Interactive charts\n• Trend analysis\n• Detailed reports")
+    static let tutorialCloudDescription = ("• Sauvegarde automatique\n• Synchronisation temps réel\n• Sécurité Apple\n• Accès multi-appareils", "• Automatic backup\n• Real-time sync\n• Apple security\n• Multi-device access")
+    
+    // Tutorial - Actions
+    static let tutorialNext = ("Suivant", "Next")
+    static let tutorialSkip = ("Passer", "Skip")
+    static let tutorialStart = ("Commencer", "Get Started")
+    static let tutorialPrevious = ("Précédent", "Previous")
 }
 
 /// Helper pour accéder facilement aux traductions

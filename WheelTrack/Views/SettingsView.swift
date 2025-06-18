@@ -8,6 +8,7 @@ public struct SettingsView: View {
     @State private var showingPrivacy = false
     @State private var showingTerms = false
     @State private var showingNotifications = false
+    @StateObject private var tutorialService = TutorialService.shared
     
     public init() {}
 
@@ -28,6 +29,8 @@ public struct SettingsView: View {
         case ("privacy_policy", _): return "Politique de confidentialité"
         case ("terms", "en"): return "Terms of Service"
         case ("terms", _): return "Conditions d'utilisation"
+        case ("tutorial", "en"): return "Show Tutorial"
+        case ("tutorial", _): return "Revoir le tutoriel"
         case ("close", "en"): return "Close"
         case ("close", _): return "Fermer"
         case ("contact_us", "en"): return "Contact Us"
@@ -137,6 +140,28 @@ public struct SettingsView: View {
                     .buttonStyle(PlainButtonStyle())
                     .accessibilityLabel(localText("privacy_policy"))
                     .accessibilityHint("Informations sur la protection de vos données personnelles")
+                    
+                    // Tutoriel
+                    Button(action: { tutorialService.startTutorial() }) {
+                        HStack {
+                            Image(systemName: "questionmark.circle")
+                                .foregroundColor(.purple)
+                                .frame(width: 24, height: 24)
+                            
+                            Text(localText("tutorial"))
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel(localText("tutorial"))
+                    .accessibilityHint("Relancer le tutoriel d'introduction de l'application")
                 }
             }
             .navigationTitle("Réglages")
