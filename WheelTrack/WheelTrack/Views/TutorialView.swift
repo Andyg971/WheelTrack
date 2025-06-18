@@ -5,195 +5,171 @@ struct TutorialView: View {
     
     // MARK: - Properties
     
-    /// Callback appelé quand le tutoriel se termine
-    let onComplete: () -> Void
+    @StateObject private var tutorialService = TutorialService.shared
+    @State private var currentPageIndex = 0
+    @State private var dragOffset: CGFloat = 0
+    @Environment(\.dismiss) private var dismiss
     
     /// Pages du tutoriel
     private let pages = TutorialPage.pages
     
-    /// Index de la page courante
-    @State private var currentPageIndex = 0
-    
-    /// Service de localisation
-    @StateObject private var localizationService = LocalizationService.shared
-    
-    /// Feedback haptique
-    private let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-    
     // MARK: - Body
     
     var body: some View {
-        ZStack {
-            // Contenu principal
-            TabView(selection: $currentPageIndex) {
-                ForEach(pages.indices, id: \.self) { index in
-                    TutorialPageView(page: pages[index])
-                        .tag(index)
+        GeometryReader { geometry in
+            ZStack {
+                // Contenu principal avec TabView
+                TabView(selection: $currentPageIndex) {
+                    ForEach(Array(pages.enumerated()), id: \.element.id) { index, page in
+                        TutorialPageView(page: page)
+                            .tag(index)
+                    }
                 }
-            }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            .animation(.easeInOut(duration: 0.5), value: currentPageIndex)
-            
-            // Overlay avec contrôles
-            VStack {
-                // Header avec bouton Skip
-                HStack {
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .animation(.easeInOut(duration: 0.5), value: currentPageIndex)
+                .onAppear {
+                    // Feedback haptique au démarrage
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                    impactFeedback.impactOccurred()
+                }
+                
+                // Overlay avec contrôles
+                VStack {
+                    // Bouton Passer en haut à droite
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                            impactFeedback.impactOccurred()
+                            skipTutorial()
+                        }) {
+                            Text(LocalizationService.shared.currentLanguage == "fr" ? "Passer" : "Skip")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(.ultraThinMaterial, in: Capsule())
+                        }
+                    }
+                    .padding(.top, 20)
+                    .padding(.trailing, 30)
+                    
                     Spacer()
                     
-                    Button(action: skipTutorial) {
-                        Text(localizationService.text(CommonTranslations.tutorialSkip.0, CommonTranslations.tutorialSkip.1))
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(
-                                Capsule()
-                                    .fill(Color.black.opacity(0.2))
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                    }
-                    .accessibilityLabel(localizationService.text(CommonTranslations.tutorialSkip.0, CommonTranslations.tutorialSkip.1))
-                    .padding(.top, 20)
-                    .padding(.trailing, 20)
-                }
-                
-                Spacer()
-                
-                // Footer avec indicateurs et boutons
-                VStack(spacing: 25) {
-                    // Indicateurs de page
-                    HStack(spacing: 12) {
-                        ForEach(pages.indices, id: \.self) { index in
-                            Circle()
-                                .fill(index == currentPageIndex ? Color.white : Color.white.opacity(0.4))
-                                .frame(width: index == currentPageIndex ? 12 : 8, height: index == currentPageIndex ? 12 : 8)
-                                .scaleEffect(index == currentPageIndex ? 1.2 : 1.0)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentPageIndex)
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    // Boutons de navigation
-                    HStack(spacing: 20) {
-                        // Bouton Précédent
-                        if currentPageIndex > 0 {
-                            Button(action: previousPage) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "chevron.left")
-                                        .font(.body.weight(.medium))
-                                    Text(localizationService.text(CommonTranslations.tutorialPrevious.0, CommonTranslations.tutorialPrevious.1))
-                                        .font(.body.weight(.medium))
-                                }
-                                .foregroundColor(.white.opacity(0.8))
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.black.opacity(0.2))
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
+                    // Contrôles du bas
+                    VStack(spacing: 20) {
+                        // Indicateur de page personnalisé
+                        HStack(spacing: 12) {
+                            ForEach(0..<pages.count, id: \.self) { index in
+                                Circle()
+                                    .fill(index == currentPageIndex ? .white : .white.opacity(0.5))
+                                    .frame(width: index == currentPageIndex ? 12 : 8, height: index == currentPageIndex ? 12 : 8)
+                                    .scaleEffect(index == currentPageIndex ? 1.2 : 1.0)
+                                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentPageIndex)
                             }
-                            .accessibilityLabel(localizationService.text(CommonTranslations.tutorialPrevious.0, CommonTranslations.tutorialPrevious.1))
-                        } else {
-                            // Spacer invisible pour maintenir l'alignement
+                        }
+                        .padding(.bottom, 10)
+                        
+                        // Boutons de navigation
+                        HStack {
+                            // Bouton Précédent (visible à partir de la page 2)
+                            if currentPageIndex > 0 {
+                                Button(action: {
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                    impactFeedback.impactOccurred()
+                                    
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        currentPageIndex -= 1
+                                    }
+                                }) {
+                                    HStack {
+                                        Image(systemName: "chevron.left")
+                                        Text(LocalizationService.shared.currentLanguage == "fr" ? "Précédent" : "Previous")
+                                    }
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 30)
+                                    .padding(.vertical, 15)
+                                    .background(.ultraThinMaterial, in: Capsule())
+                                }
+                                .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
+                            }
+                            
                             Spacer()
-                                .frame(width: 100)
-                        }
-                        
-                        Spacer()
-                        
-                        // Bouton Suivant/Commencer
-                        Button(action: nextPageOrComplete) {
-                            HStack(spacing: 8) {
-                                Text(isLastPage ? 
-                                     localizationService.text(CommonTranslations.tutorialStart.0, CommonTranslations.tutorialStart.1) :
-                                     localizationService.text(CommonTranslations.tutorialNext.0, CommonTranslations.tutorialNext.1)
-                                )
-                                .font(.body.weight(.semibold))
+                            
+                            // Bouton principal (Suivant/Commencer)
+                            Button(action: {
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                impactFeedback.impactOccurred()
                                 
-                                if !isLastPage {
-                                    Image(systemName: "chevron.right")
-                                        .font(.body.weight(.medium))
+                                if currentPageIndex < pages.count - 1 {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        currentPageIndex += 1
+                                    }
+                                } else {
+                                    completeTutorial()
                                 }
-                            }
-                            .foregroundColor(isLastPage ? Color.white : Color.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(
-                                Capsule()
-                                    .fill(isLastPage ? Color.white.opacity(0.2) : Color.black.opacity(0.2))
-                                    .overlay(
+                            }) {
+                                HStack {
+                                    Text(currentPageIndex < pages.count - 1 
+                                                                     ? (LocalizationService.shared.currentLanguage == "fr" ? "Suivant" : "Next")
+                            : (LocalizationService.shared.currentLanguage == "fr" ? "Commencer" : "Get Started"))
+                                    
+                                    if currentPageIndex < pages.count - 1 {
+                                        Image(systemName: "chevron.right")
+                                    } else {
+                                        Image(systemName: "arrow.right.circle.fill")
+                                    }
+                                }
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 30)
+                                .padding(.vertical, 15)
+                                .background {
+                                    if currentPageIndex < pages.count - 1 {
                                         Capsule()
-                                            .stroke(Color.white, lineWidth: isLastPage ? 2 : 1)
-                                    )
-                            )
-                            .scaleEffect(isLastPage ? 1.05 : 1.0)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isLastPage)
+                                            .fill(.ultraThinMaterial)
+                                    } else {
+                                        Capsule()
+                                            .fill(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing))
+                                    }
+                                }
+                                .scaleEffect(currentPageIndex == pages.count - 1 ? 1.1 : 1.0)
+                                .animation(.easeInOut(duration: 0.2), value: currentPageIndex)
+                            }
                         }
-                        .accessibilityLabel(isLastPage ? 
-                                           localizationService.text(CommonTranslations.tutorialStart.0, CommonTranslations.tutorialStart.1) :
-                                           localizationService.text(CommonTranslations.tutorialNext.0, CommonTranslations.tutorialNext.1)
-                        )
+                        .padding(.horizontal, 30)
+                        .padding(.bottom, 50)
                     }
-                    .padding(.horizontal, 30)
                 }
-                .padding(.bottom, 50)
             }
         }
+        .ignoresSafeArea()
         .statusBarHidden()
-    }
-    
-    // MARK: - Computed Properties
-    
-    /// Indique si on est sur la dernière page
-    private var isLastPage: Bool {
-        currentPageIndex == pages.count - 1
     }
     
     // MARK: - Actions
     
-    /// Passe à la page suivante ou termine le tutoriel
-    private func nextPageOrComplete() {
-        impactFeedback.impactOccurred()
-        
-        if isLastPage {
-            // Terminer le tutoriel
-            onComplete()
-        } else {
-            // Page suivante
-            withAnimation(.easeInOut(duration: 0.5)) {
-                currentPageIndex += 1
-            }
-        }
-    }
-    
-    /// Revient à la page précédente
-    private func previousPage() {
-        impactFeedback.impactOccurred()
-        
-        withAnimation(.easeInOut(duration: 0.5)) {
-            currentPageIndex = max(0, currentPageIndex - 1)
-        }
-    }
-    
     /// Ignore le tutoriel
     private func skipTutorial() {
-        impactFeedback.impactOccurred()
-        onComplete()
+        tutorialService.completeTutorial()
+        dismiss()
+    }
+    
+    private func completeTutorial() {
+        tutorialService.completeTutorial()
+        
+        // Feedback haptique de succès
+        let notificationFeedback = UINotificationFeedbackGenerator()
+        notificationFeedback.notificationOccurred(.success)
+        
+        dismiss()
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    TutorialView {
-        print("Tutoriel terminé")
-    }
+    TutorialView()
 } 

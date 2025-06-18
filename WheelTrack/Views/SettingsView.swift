@@ -8,7 +8,7 @@ public struct SettingsView: View {
     @State private var showingPrivacy = false
     @State private var showingTerms = false
     @State private var showingNotifications = false
-    // @StateObject private var tutorialService = TutorialService.shared // Temporairement commenté
+    @StateObject private var tutorialService = TutorialService.shared
     
     public init() {}
 
@@ -141,8 +141,8 @@ public struct SettingsView: View {
                     .accessibilityLabel(localText("privacy_policy"))
                     .accessibilityHint("Informations sur la protection de vos données personnelles")
                     
-                    // Tutoriel (temporairement désactivé)
-                    Button(action: { /* tutorialService.startTutorial() */ }) {
+                    // Tutoriel
+                    Button(action: { tutorialService.startTutorial() }) {
                         HStack {
                             Image(systemName: "questionmark.circle")
                                 .foregroundColor(.purple)
