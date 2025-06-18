@@ -6,11 +6,84 @@ public struct MaintenanceView: View {
     @State private var showingAddSheet = false
     @State private var editingMaintenance: Maintenance? = nil
     @State private var searchText = ""
-    @State private var selectedVehicle: String = "Tous"
+    @State private var selectedVehicle: String = "all_vehicles"
+    
+    // Système de localisation local
+    @AppStorage("app_language") private var appLanguage: String = "fr"
     
     init(vehicles: [Vehicle], viewModel: MaintenanceViewModel) {
         self.vehicles = vehicles
         self.viewModel = viewModel
+    }
+    
+    // Fonction de localisation locale
+    static func localText(_ key: String, language: String) -> String {
+        switch language {
+        case "en":
+            switch key {
+            case "maintenance": return "Maintenance"
+            case "track_vehicle_maintenance": return "Track your vehicle maintenance"
+            case "total_cost": return "Total cost"
+            case "maintenance_singular": return "maintenance"
+            case "maintenance_plural": return "maintenance"
+            case "vehicle_distribution": return "Distribution by vehicle"
+            case "search_maintenance": return "Search maintenance"
+            case "all_vehicles": return "All vehicles"
+            case "all": return "All"
+            case "no_maintenance": return "No maintenance"
+            case "add_first_maintenance": return "Start by adding your first maintenance to track your vehicle care"
+            case "add_maintenance": return "Add maintenance"
+            case "add_new_maintenance": return "Add new maintenance"
+            case "view_details": return "View details"
+            case "edit": return "Edit"
+            case "delete": return "Delete"
+            case "cancel": return "Cancel"
+            case "delete_maintenance_title": return "Delete maintenance?"
+            case "delete_maintenance_message": return "This action cannot be undone."
+            case "maintenance_type": return "Type"
+            case "date": return "Date"
+            case "cost": return "Cost"
+            case "vehicle": return "Vehicle"
+            case "search_maintenance_placeholder": return "Search maintenance..."
+            case "vehicles_filter": return "Vehicles"
+            case "all_maintenances": return "All Maintenances"
+            case "no_maintenance_title": return "No maintenance"
+            case "no_maintenance_message": return "Start recording your vehicle maintenance for optimal tracking."
+            default: return key
+            }
+        default: // français
+            switch key {
+            case "maintenance": return "Maintenance"
+            case "track_vehicle_maintenance": return "Suivez l'entretien de vos véhicules"
+            case "total_cost": return "Coût total"
+            case "maintenance_singular": return "maintenance"
+            case "maintenance_plural": return "maintenances"
+            case "vehicle_distribution": return "Répartition par véhicule"
+            case "search_maintenance": return "Rechercher une maintenance"
+            case "all_vehicles": return "Tous les véhicules"
+            case "all": return "Tous"
+            case "no_maintenance": return "Aucune maintenance"
+            case "add_first_maintenance": return "Commencez par ajouter votre première maintenance pour suivre l'entretien"
+            case "add_maintenance": return "Ajouter une maintenance"
+            case "add_new_maintenance": return "Ajouter une nouvelle maintenance"
+            case "view_details": return "Voir détails"
+            case "edit": return "Modifier"
+            case "delete": return "Supprimer"
+            case "cancel": return "Annuler"
+            case "delete_maintenance_title": return "Supprimer la maintenance ?"
+            case "delete_maintenance_message": return "Cette action ne peut pas être annulée."
+            case "maintenance_type": return "Type"
+            case "date": return "Date"
+            case "cost": return "Coût"
+            case "vehicle": return "Véhicule"
+            case "search_maintenance_placeholder": return "Rechercher une maintenance..."
+            case "vehicles_filter": return "Véhicules"
+            case "all_maintenances": return "Toutes les maintenances"
+            case "no_maintenance_title": return "Aucune maintenance"
+            case "no_maintenance_message": return "Commencez à enregistrer les maintenances de vos véhicules pour un suivi optimal."
+            default: return key
+            }
+        }
     }
     
     public var body: some View {
@@ -54,9 +127,11 @@ public struct MaintenanceView: View {
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                // Bouton flottant discret uniquement quand il y a des maintenances
+                // Bouton flottant unifié
                 if !filteredMaintenances.isEmpty {
-                    Button(action: { showingAddSheet = true }) {
+                    Button(action: {
+                        showingAddSheet = true
+                    }) {
                         Image(systemName: "plus")
                             .font(.title2)
                             .fontWeight(.semibold)
@@ -72,6 +147,8 @@ public struct MaintenanceView: View {
                             .clipShape(Circle())
                             .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
                     }
+                    .accessibilityLabel(MaintenanceView.localText("add_new_maintenance", language: appLanguage))
+                    .accessibilityHint("Touchez pour ouvrir le formulaire d'ajout de maintenance")
                     .padding(.trailing, 20)
                     .padding(.bottom, 30)
                 }
@@ -104,12 +181,12 @@ public struct MaintenanceView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Maintenance")
+                            Text(MaintenanceView.localText("maintenance", language: appLanguage))
                                 .font(.largeTitle)
                                 .fontWeight(.bold)
                                 .foregroundColor(.primary)
                             
-                            Text("Suivez l'entretien de vos véhicules")
+                            Text(MaintenanceView.localText("track_vehicle_maintenance", language: appLanguage))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -126,7 +203,7 @@ public struct MaintenanceView: View {
             VStack(spacing: 20) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Coût total")
+                        Text(MaintenanceView.localText("total_cost", language: appLanguage))
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.secondary)
@@ -144,7 +221,7 @@ public struct MaintenanceView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.orange)
                         
-                        Text(filteredMaintenances.count > 1 ? "maintenances" : "maintenance")
+                        Text(filteredMaintenances.count > 1 ? MaintenanceView.localText("maintenance_plural", language: appLanguage) : MaintenanceView.localText("maintenance_singular", language: appLanguage))
                             .font(.caption)
                             .fontWeight(.medium)
                             .foregroundColor(.secondary)
@@ -154,7 +231,7 @@ public struct MaintenanceView: View {
                 // Statistiques par véhicule
                 if !vehicleStats.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Répartition par véhicule")
+                        Text(MaintenanceView.localText("vehicle_distribution", language: appLanguage))
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -200,7 +277,7 @@ public struct MaintenanceView: View {
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.secondary)
                 
-                TextField("Rechercher une maintenance...", text: $searchText)
+                TextField(MaintenanceView.localText("search_maintenance_placeholder", language: appLanguage), text: $searchText)
                     .font(.system(size: 16))
                     .textFieldStyle(PlainTextFieldStyle())
                 
@@ -227,7 +304,7 @@ public struct MaintenanceView: View {
             // Filtre par véhicule
             if !uniqueVehicles.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Véhicules")
+                    Text(MaintenanceView.localText("vehicles_filter", language: appLanguage))
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -235,11 +312,11 @@ public struct MaintenanceView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ModernMaintenanceFilterChip(
-                                title: "Tous",
-                                isSelected: selectedVehicle == "Tous"
+                                title: MaintenanceView.localText("all", language: appLanguage),
+                                isSelected: selectedVehicle == "all_vehicles"
                             ) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
-                                    selectedVehicle = "Tous"
+                                    selectedVehicle = "all_vehicles"
                                 }
                             }
                             
@@ -263,7 +340,7 @@ public struct MaintenanceView: View {
     
     private var modernMaintenanceListSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Toutes les maintenances")
+            Text(MaintenanceView.localText("all_maintenances", language: appLanguage))
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
@@ -305,12 +382,12 @@ public struct MaintenanceView: View {
                 }
                 
                 VStack(spacing: 12) {
-                    Text("Aucune maintenance")
+                    Text(MaintenanceView.localText("no_maintenance_title", language: appLanguage))
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     
-                    Text("Commencez à enregistrer les maintenances de vos véhicules pour un suivi optimal.")
+                    Text(MaintenanceView.localText("no_maintenance_message", language: appLanguage))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -322,7 +399,7 @@ public struct MaintenanceView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 16))
-                    Text("Ajouter une maintenance")
+                    Text(MaintenanceView.localText("add_maintenance", language: appLanguage))
                         .fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
@@ -357,7 +434,7 @@ public struct MaintenanceView: View {
         }
         
         // Filtre par véhicule
-        if selectedVehicle != "Tous" {
+        if selectedVehicle != "all_vehicles" {
             filtered = filtered.filter { $0.vehicule == selectedVehicle }
         }
         
@@ -424,109 +501,90 @@ struct ModernMaintenanceCard: View {
     var onEdit: (Maintenance) -> Void
     var onDelete: (Maintenance) -> Void
     @State private var showDeleteAlert = false
+    @AppStorage("app_language") private var appLanguage: String = "fr"
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack(alignment: .top, spacing: 16) {
-                // Icône de maintenance moderne
-                ZStack {
-                    Circle()
-                        .fill(.orange.opacity(0.15))
-                        .frame(width: 48, height: 48)
-                    
+        HStack(spacing: 16) {
+            // Icône compacte
+            Circle()
+                .fill(.orange.opacity(0.15))
+                .frame(width: 40, height: 40)
+                .overlay(
                     Image(systemName: "wrench.and.screwdriver.fill")
-                        .font(.system(size: 20, weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.orange)
-                }
+                )
+            
+            // Informations principales
+            VStack(alignment: .leading, spacing: 2) {
+                Text(maintenance.titre)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
                 
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(maintenance.titre)
-                        .font(.headline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
-                            
-                            if !maintenance.description.isEmpty {
-                                Text(maintenance.description)
+                HStack(spacing: 8) {
+                    Text(maintenance.vehicule)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                                    .lineLimit(2)
-                            }
-                        }
+                    
+                    Text("•")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    VStack(spacing: 1) {
+                        Text(maintenance.date.formatted(.dateTime.day().month()))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                         
-                Spacer()
-                        
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text(String(format: "%.2f €", maintenance.cout))
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .foregroundColor(.primary)
-                            
+                        Text(maintenance.date.formatted(.dateTime.year()))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Text("•")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(maintenance.kilometrage) km")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            // Prix et menu
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(String(format: "%.0f €", maintenance.cout))
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                
                 Menu {
                     Button(action: { onEdit(maintenance) }) {
-                        Label("Modifier", systemImage: "pencil")
+                        Label(MaintenanceView.localText("edit", language: appLanguage), systemImage: "pencil")
                     }
                     Button(role: .destructive, action: { showDeleteAlert = true }) {
-                        Label("Supprimer", systemImage: "trash")
+                        Label(MaintenanceView.localText("delete", language: appLanguage), systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    // Informations détaillées
-                    VStack(spacing: 8) {
-                        HStack(spacing: 16) {
-                            Label(maintenance.vehicule, systemImage: "car.fill")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Label(maintenance.date.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        HStack(spacing: 16) {
-                            Label(String(format: "%d km", maintenance.kilometrage), systemImage: "speedometer")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            HStack(spacing: 8) {
-                                // Badge maintenance
-                                Text("Maintenance")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.orange)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.orange.opacity(0.1))
-                                    .clipShape(Capsule())
-                                
-                                Text(maintenance.vehicule)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
                 }
             }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-        )
+        .padding(16)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
         .alert(isPresented: $showDeleteAlert) {
             Alert(
-                title: Text("Supprimer la maintenance ?"),
-                message: Text("Cette action est irréversible."),
-                primaryButton: .destructive(Text("Supprimer")) { onDelete(maintenance) },
-                secondaryButton: .cancel()
+                title: Text(MaintenanceView.localText("delete_maintenance_title", language: appLanguage)),
+                message: Text(MaintenanceView.localText("delete_maintenance_message", language: appLanguage)),
+                primaryButton: .destructive(Text(MaintenanceView.localText("delete", language: appLanguage))) { onDelete(maintenance) },
+                secondaryButton: .cancel(Text(MaintenanceView.localText("cancel", language: appLanguage)))
             )
         }
     }

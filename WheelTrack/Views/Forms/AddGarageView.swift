@@ -97,12 +97,12 @@ struct AddGarageView: View {
             .navigationTitle("Nouveau garage")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Enregistrer") {
                         // Préparer le garage avec toutes les infos (y compris coordonnées)
                         // TODO: Enregistrer dans la base ou ViewModel

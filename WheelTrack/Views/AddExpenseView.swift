@@ -14,12 +14,13 @@ struct AddExpenseView: View {
     
     // Pour fermer la vue
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var localizationService = LocalizationService.shared
     
     var body: some View {
         NavigationStack {
             Form {
-                Section("Informations générales") {
-                    Picker("Véhicule", selection: $selectedVehicleId) {
+                Section(localizationService.text("Informations générales", "General Information")) {
+                    Picker(localizationService.text("Véhicule", "Vehicle"), selection: $selectedVehicleId) {
                         ForEach(vehicles) { vehicle in
                             Text("\(vehicle.brand) \(vehicle.model) - \(vehicle.licensePlate)")
                                 .tag(vehicle.id as UUID?)
@@ -27,28 +28,28 @@ struct AddExpenseView: View {
                     }
                     .accessibilityIdentifier("vehiclePicker")
                     
-                    Picker("Catégorie", selection: $selectedCategory) {
+                    Picker(CommonTranslations.category.0, selection: $selectedCategory) {
                         ForEach(ExpenseCategory.allCases) { category in
                             Text(category.rawValue).tag(category)
                         }
                     }
                     .accessibilityIdentifier("categoryPicker")
                     
-                    TextField("Description", text: $description)
+                    TextField(CommonTranslations.description.0, text: $description)
                         .accessibilityIdentifier("descriptionField")
                     
-                    TextField("Montant", text: $amount)
+                    TextField(CommonTranslations.amount.0, text: $amount)
                         .keyboardType(.decimalPad)
                         .accessibilityIdentifier("amountField")
                     
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                    DatePicker(CommonTranslations.date.0, selection: $date, displayedComponents: .date)
                         .accessibilityIdentifier("datePicker")
                 }
             }
-            .navigationTitle(NSLocalizedString("Nouvelle dépense", comment: "Titre du formulaire d'ajout de dépense"))
+            .navigationTitle(localizationService.text("Nouvelle dépense", "New Expense"))
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(NSLocalizedString("Ajouter", comment: "Bouton pour ajouter une dépense")) {
+                    Button(CommonTranslations.add.0) {
                         guard let amountValue = Double(amount), !description.isEmpty, let vehicleId = selectedVehicleId else { return }
                         
                         let expense = Expense(
@@ -69,7 +70,7 @@ struct AddExpenseView: View {
                     .accessibilityIdentifier("addButton")
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("Annuler", comment: "Bouton pour annuler l'ajout")) { dismiss() }
+                    Button(CommonTranslations.cancel.0) { dismiss() }
                         .accessibilityIdentifier("cancelButton")
                 }
             }
@@ -86,7 +87,7 @@ struct AddExpenseView: View {
 // Explications pédagogiques :
 // - L'utilisateur choisit le véhicule associé à la dépense.
 // - Les identifiants d'accessibilité facilitent les tests et l'accessibilité.
-// - Les textes sont localisés avec NSLocalizedString.
+// - Les textes sont maintenant localisés avec LocalizationService.
 
 #Preview {
     AddExpenseView(vehicles: [

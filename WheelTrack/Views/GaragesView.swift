@@ -4,126 +4,244 @@ import CoreLocation
 
 public struct GaragesView: View {
     @StateObject private var viewModel = GaragesViewModel()
-    @StateObject private var locationService = LocationService.shared
-    @State private var showingMap = true  // Afficher la carte par défaut
-    @State private var selectedGarageOnMap: Garage? = nil
+    @ObservedObject private var locationService = LocationService.shared
     @State private var favoriteGarages: Set<String> = []  // IDs des garages favoris
+    @State private var showingLocationAlert = false
+    @State private var showOnlyFavorites = false  // Nouveau toggle pour les favoris
+    @State private var showingLocationPrompt = false
+    @State private var showingAddGarage = false
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
+    
+    // ✅ Migration vers système centralisé
+    @EnvironmentObject var localizationService: LocalizationService
 
     public init() {
-        // Charger les favoris depuis UserDefaults
-        if let saved = UserDefaults.standard.object(forKey: "favoriteGarages") as? [String] {
-            _favoriteGarages = State<Set<String>>(initialValue: Set(saved))
+        // Charger les favoris existants depuis UserDefaults
+        if let savedFavorites = UserDefaults.standard.array(forKey: "favoriteGarages") as? [String] {
+            _favoriteGarages = State<Set<String>>(initialValue: Set(savedFavorites))
+        } else {
+            _favoriteGarages = State<Set<String>>(initialValue: Set<String>())
+        }
+        
+        print("🏢 GaragesView initialisée avec \(_favoriteGarages.wrappedValue.count) favoris")
+    }
+    
+
+    
+    // Propriété calculée pour filtrer les garages
+    private var displayedGarages: [Garage] {
+        if showOnlyFavorites {
+            return viewModel.garages.filter { favoriteGarages.contains($0.id.uuidString) }
+        } else {
+            return viewModel.garages
         }
     }
     
     public var body: some View {
         NavigationStack {
-            GaragesMainView(
-                showingMap: $showingMap,
-                favoriteGarages: $favoriteGarages,
-                locationService: locationService,
-                viewModel: viewModel,
-                onToggleFavorite: toggleFavorite
-            )
-            .navigationTitle(showingMap ? "Garages à proximité" : "Mes Garages")
-            .navigationBarTitleDisplayMode(NavigationBarItem.TitleDisplayMode.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showingMap.toggle()
-                        }
-                    } label: {
-                        Image(systemName: showingMap ? "list.bullet" : "map")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.green, Color.green.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .clipShape(Circle())
-                            .shadow(color: .green.opacity(0.3), radius: 8, x: 0, y: 4)
-                    }
-                    .accessibilityIdentifier("toggleViewButton")
-                }
+            ZStack {
+                Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        print("🔘 Bouton géolocalisation tapé - Statut actuel: \(locationService.authorizationStatus)")
-                        
-                        switch locationService.authorizationStatus {
-                        case .denied, .restricted:
-                            print("📱 Ouverture des Réglages car autorisation refusée")
-                            locationService.requestLocationPermission()
-                        case .notDetermined:
-                            print("📍 Première demande d'autorisation")
-                            locationService.requestLocationPermission()
-                        case .authorizedWhenInUse, .authorizedAlways:
-                            print("✅ Autorisation accordée - Force la mise à jour")
-                            locationService.getCurrentLocation()
-                        @unknown default:
-                            print("❓ Statut inconnu - Reset complet")
-                            locationService.requestLocationPermission()
-                        }
-                    } label: {
-                        Image(systemName: getLocationButtonIcon())
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                LinearGradient(
-                                    colors: getLocationButtonColors(),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .clipShape(Circle())
-                            .shadow(color: getLocationButtonColors().first?.opacity(0.3) ?? .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                            .rotationEffect(.degrees(locationService.isUpdatingLocation ? 360 : 0))
-                            .animation(locationService.isUpdatingLocation ? .linear(duration: 2).repeatForever(autoreverses: false) : .default, value: locationService.isUpdatingLocation)
-                    }
-                    .accessibilityIdentifier("locationButton")
-                }
+                // Vue liste des garages uniquement
+                garageListView
             }
+            .navigationTitle(showOnlyFavorites ? L(CommonTranslations.myFavorites) : L(CommonTranslations.myGarages))
+            .navigationBarTitleDisplayMode(.large)
+
             .onAppear {
-                print("📱 GaragesView apparue - VÉRIFICATION GÉOLOCALISATION")
-                
-                // Force immédiate de la demande d'autorisation selon le statut
-                let status = locationService.authorizationStatus
-                print("🔍 Statut au démarrage: \(status.rawValue)")
-                
-                switch status {
-                case .notDetermined:
-                    print("📍 Première demande d'autorisation...")
-                    locationService.requestLocationPermission()
-                case .denied, .restricted:
-                    print("❌ Autorisation refusée précédemment")
-                    locationService.locationError = "🔴 Allez dans Réglages > Confidentialité > Localisation > WheelTrack pour autoriser"
-                case .authorizedWhenInUse, .authorizedAlways:
-                    print("✅ Déjà autorisé - Démarrage géolocalisation")
-                    locationService.startLocationUpdates()
-                @unknown default:
-                    print("❓ Statut inconnu - Tentative d'autorisation")
+                // Demander la géolocalisation si pas encore autorisée
+                if locationService.currentLocation == nil {
                     locationService.requestLocationPermission()
                 }
             }
-            .onDisappear {
-                // Arrêter la géolocalisation pour économiser la batterie
-                if !showingMap {
-                    locationService.stopLocationUpdates()
-                    print("📱 GaragesView disparue - Arrêt géolocalisation")
+            // ✅ Optimisation de la réactivité du service
+            .onChange(of: viewModel.garages.count) {
+                // Force la mise à jour de l'affichage quand les garages changent
+            }
+            .alert(L(CommonTranslations.locationRequired), isPresented: $showingLocationAlert) {
+                Button(L(CommonTranslations.settings)) {
+                    openSettings()
                 }
+                Button(L(CommonTranslations.later), role: .cancel) { }
+            } message: {
+                Text(L(CommonTranslations.locationRequiredMessage))
             }
         }
     }
     
-    // MARK: - Favorite Management
+    // MARK: - Garages List View
+    private var garageListView: some View {
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                // Message d'état de la géolocalisation (seulement en mode tous les garages)
+                if !showOnlyFavorites {
+                    locationStatusView
+                }
+                
+                // Bouton pour basculer entre favoris et tous les garages
+                HStack {
+                    Text(showOnlyFavorites ? L(CommonTranslations.myFavorites) : L(CommonTranslations.myGarages))
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    // Menu d'actions pour les garages
+                    Menu {
+                        Button {
+                            refreshNearbyGarages()
+                        } label: {
+                            Label(L(CommonTranslations.nearbyGarages), systemImage: "location.circle.fill")
+                        }
+                        
+                        Button {
+                            openAppleMapsWithPOI()
+                        } label: {
+                            Label(L(CommonTranslations.openAppleMaps), systemImage: "map.fill")
+                        }
+                        
+                        if favoriteGarages.count > 0 {
+                            Divider()
+                            Button(role: .destructive) {
+                                clearAllFavorites()
+                            } label: {
+                                Label(L(CommonTranslations.deleteAllFavorites), systemImage: "star.slash")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showOnlyFavorites.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: showOnlyFavorites ? "star.fill" : "star")
+                                .font(.body)
+                                .fontWeight(.semibold)
+                            Text(showOnlyFavorites ? L(CommonTranslations.all) : L(CommonTranslations.favorites))
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            LinearGradient(
+                                colors: showOnlyFavorites ? 
+                                    [Color.yellow, Color.orange] : 
+                                    [Color.gray, Color.gray.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .clipShape(Capsule())
+                        .shadow(color: showOnlyFavorites ? .yellow.opacity(0.3) : .gray.opacity(0.3), radius: 6, x: 0, y: 3)
+                    }
+                    .accessibilityIdentifier("favoritesToggleButton")
+                    .accessibilityLabel(showOnlyFavorites ? L(CommonTranslations.showAllGarages) : L(CommonTranslations.showOnlyFavorites))
+                    .accessibilityHint(L(CommonTranslations.toggleGaragesFavorites))
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
+                
+                // En-tête avec statistiques
+                GaragesHeaderView(
+                    garageCount: displayedGarages.count,
+                    favoriteCount: favoriteGarages.count,
+                    locationEnabled: locationService.currentLocation != nil,
+                    locationBasedLoaded: viewModel.locationBasedGaragesLoaded,
+                    showingFavorites: showOnlyFavorites
+                )
+                
+                // Indicateur de chargement (seulement en mode tous les garages)
+                if viewModel.isLoading && !showOnlyFavorites {
+                    ProgressView(L(CommonTranslations.searchingNearby))
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                }
+                
+                // Message si aucun garage
+                if displayedGarages.isEmpty && !viewModel.isLoading {
+                    if showOnlyFavorites {
+                        EmptyFavoritesMessageView(
+                            onShowAllGarages: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showOnlyFavorites = false
+                                }
+                            }
+                        )
+                    } else {
+                        EmptyGaragesView(
+                            hasLocation: locationService.currentLocation != nil,
+                            onRequestLocation: {
+                                locationService.requestLocationPermission()
+                            },
+                            onRefreshNearby: {
+                                refreshNearbyGarages()
+                            }
+                        )
+                    }
+                }
+                
+                // Liste des garages avec favoris
+                ForEach(displayedGarages) { garage in
+                    ModernGarageCard(
+                        garage: garage,
+                        isFavorite: favoriteGarages.contains(garage.id.uuidString),
+                        onToggleFavorite: { _ in toggleFavorite(garage) },
+                        userLocation: locationService.currentLocation?.coordinate
+                    )
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+        }
+        .refreshable {
+            // Pull-to-refresh pour actualiser les garages
+            if !showOnlyFavorites {
+                await refreshGaragesAsync()
+            }
+        }
+    }
+    
+    // MARK: - Location Status View
+    private var locationStatusView: some View {
+        Group {
+            if locationService.currentLocation == nil {
+                LocationPermissionBanner(
+                    onRequestPermission: {
+                        locationService.requestLocationPermission()
+                    },
+                    onOpenSettings: {
+                        showingLocationAlert = true
+                    }
+                )
+            } else if viewModel.locationBasedGaragesLoaded {
+                LocationSuccessBanner()
+            }
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func refreshNearbyGarages() {
+        // ✅ Optimisation : Invalider le cache avant le refresh
+        viewModel.invalidateCache()
+        
+        if locationService.currentLocation != nil {
+            viewModel.refreshLocationBasedGarages()
+        } else {
+            showingLocationAlert = true
+        }
+    }
     
     private func toggleFavorite(_ garage: Garage) {
         let garageId = garage.id.uuidString
@@ -142,155 +260,36 @@ public struct GaragesView: View {
         impactFeedback.impactOccurred()
     }
     
-    // MARK: - Helper Functions for Location Button
-    
-    private func getLocationButtonIcon() -> String {
-        switch locationService.authorizationStatus {
-        case .denied, .restricted:
-            return "location.slash.fill"
-        case .notDetermined:
-            return "location.fill"
-        case .authorizedWhenInUse, .authorizedAlways:
-            return locationService.isUpdatingLocation ? "location.circle" : "location.fill"
-        @unknown default:
-            return "location.fill"
+    /// Ouvre Apple Maps avec votre géolocalisation uniquement
+    private func openAppleMapsWithPOI() {
+        // Récupérer la position de l'utilisateur ou une position par défaut (Paris)
+        let userLocation = locationService.currentLocation?.coordinate ?? CLLocationCoordinate2D(latitude: 48.8566, longitude: 2.3522)
+        
+        // Créer l'URL pour Apple Maps avec seulement la géolocalisation
+        var urlComponents = URLComponents(string: "http://maps.apple.com/")!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "ll", value: "\(userLocation.latitude),\(userLocation.longitude)"),
+            URLQueryItem(name: "z", value: "13") // Niveau de zoom
+        ]
+        
+        if let url = urlComponents.url {
+            UIApplication.shared.open(url)
+            print("🗺️ Ouverture d'Apple Maps avec géolocalisation uniquement")
         }
     }
     
-    private func getLocationButtonColors() -> [Color] {
-        switch locationService.authorizationStatus {
-        case .denied, .restricted:
-            return [Color.red, Color.red.opacity(0.8)]
-        case .notDetermined:
-            return [Color.orange, Color.orange.opacity(0.8)]
-        case .authorizedWhenInUse, .authorizedAlways:
-            return [Color.blue, Color.blue.opacity(0.8)]
-        @unknown default:
-            return [Color.gray, Color.gray.opacity(0.8)]
-        }
-    }
-}
-
-// MARK: - Garages Main View (pour simplifier la compilation)
-struct GaragesMainView: View {
-    @Binding var showingMap: Bool
-    @Binding var favoriteGarages: Set<String>
-    @ObservedObject var locationService: LocationService
-    @ObservedObject var viewModel: GaragesViewModel
-    let onToggleFavorite: (Garage) -> Void
-    
-    var body: some View {
-        ZStack {
-            Color(.systemGroupedBackground)
-                .ignoresSafeArea()
-            
-            if showingMap {
-                // Vue carte en plein écran
-                ModernGaragesMapView(
-                    garages: viewModel.garages,
-                    favoriteGarages: $favoriteGarages,
-                    onToggleFavorite: onToggleFavorite,
-                    locationService: locationService
-                )
-            } else {
-                // Vue liste des garages
-                garageListView
-            }
-            
-            // Debug temporaire (à retirer en production)
-            #if DEBUG
-            VStack {
-                Spacer()
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("🔍 Debug Géolocalisation")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                        
-                        Text("Statut: \(locationService.authorizationStatus == .authorizedWhenInUse || locationService.authorizationStatus == .authorizedAlways ? "✅ Autorisé" : "❌ Non autorisé")")
-                            .font(.caption2)
-                        
-                        Text("Mise à jour: \(locationService.isUpdatingLocation ? "🔄 Active" : "⏸️ Arrêtée")")
-                            .font(.caption2)
-                        
-                        if let location = locationService.currentLocation {
-                            Text("Position: \(String(format: "%.4f", location.coordinate.latitude)), \(String(format: "%.4f", location.coordinate.longitude))")
-                                .font(.caption2)
-                            
-                            Text("Précision: \(String(format: "%.0f", location.horizontalAccuracy))m")
-                                .font(.caption2)
-                                .foregroundColor(location.horizontalAccuracy < 50 ? .green : location.horizontalAccuracy < 200 ? .orange : .red)
-                        } else {
-                            Text("Position: Aucune")
-                                .font(.caption2)
-                                .foregroundColor(.red)
-                        }
-                        
-                        if let error = locationService.locationError {
-                            Text("Erreur: \(error)")
-                                .font(.caption2)
-                                .foregroundColor(.red)
-                        }
-                        
-                        // Boutons de test
-                        HStack(spacing: 8) {
-                            Button("🔄 Test") {
-                                print("🧪 Test d'autorisation basique depuis debug")
-                                locationService.requestLocationPermission()
-                            }
-                            .font(.caption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(4)
-                            
-                            Button("🚀 Reset") {
-                                print("🚀 RESET COMPLET depuis debug")
-                                locationService.getCurrentLocation()
-                            }
-                            .font(.caption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.red)
-                            .foregroundColor(.white)
-                            .cornerRadius(4)
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(12)
-                .background(Color.black.opacity(0.8))
-                .foregroundColor(.white)
-                .cornerRadius(12)
-                .padding()
-            }
-            #endif
+    private func openSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
         }
     }
     
-    // MARK: - Garages List View for GaragesMainView
-    private var garageListView: some View {
-        ScrollView {
-            LazyVStack(spacing: 16) {
-                // En-tête avec statistiques
-                GaragesHeaderView(
-                    garageCount: viewModel.garages.count,
-                    favoriteCount: favoriteGarages.count
-                )
-                
-                // Liste des garages avec favoris
-                ForEach(viewModel.garages) { garage in
-                    ModernGarageCard(
-                        garage: garage,
-                        isFavorite: favoriteGarages.contains(garage.id.uuidString),
-                        onToggleFavorite: { _ in onToggleFavorite(garage) }
-                    )
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-        }
+    private func clearAllFavorites() {
+        favoriteGarages.removeAll()
+        UserDefaults.standard.removeObject(forKey: "favoriteGarages")
+        // Animation de feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
     }
 }
 
@@ -298,37 +297,67 @@ struct GaragesMainView: View {
 struct GaragesHeaderView: View {
     let garageCount: Int
     let favoriteCount: Int
+    let locationEnabled: Bool
+    let locationBasedLoaded: Bool
+    let showingFavorites: Bool
+    // ✅ Migration vers système centralisé
+    @EnvironmentObject var localizationService: LocalizationService
+    
+    // MARK: - Localization
+    // ✅ Migration terminée - plus besoin de localText
     
     var body: some View {
         VStack(spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Garages à proximité")
+                    Text(showingFavorites ? L(CommonTranslations.myFavorites) : (locationBasedLoaded ? L(CommonTranslations.nearbyGarages) : L(CommonTranslations.myGarages)))
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     
-                    Text("\(garageCount) garage\(garageCount > 1 ? "s" : "") trouvé\(garageCount > 1 ? "s" : "")")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    if showingFavorites {
+                        Text("\(garageCount) \(garageCount > 1 ? L(CommonTranslations.favoriteGarages) : L(CommonTranslations.favoriteGarage))")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("\(garageCount) \(garageCount > 1 ? L(CommonTranslations.garagesFound) : L(CommonTranslations.garageFound))")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Spacer()
                 
-                // Icône décorative
-                Image(systemName: "building.2.fill")
+                // Icône décorative avec indicateur approprié
+                Image(systemName: showingFavorites ? "star.fill" : (locationEnabled ? "location.fill" : "building.2.fill"))
                     .font(.title2)
-                    .foregroundColor(.blue)
+                    .foregroundColor(showingFavorites ? .yellow : (locationEnabled ? .green : .blue))
                     .frame(width: 44, height: 44)
-                    .background(Color.blue.opacity(0.1))
+                    .background((showingFavorites ? Color.yellow : (locationEnabled ? Color.green : Color.blue)).opacity(0.1))
                     .clipShape(Circle())
             }
             
-            // Statistiques des favoris
-            if favoriteCount > 0 {
+            // Indicateur de statut de localisation (seulement si pas en mode favoris)
+            if !showingFavorites && locationBasedLoaded {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                    Text(L(CommonTranslations.garagesLoadedLocation))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.green.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            
+            // Statistiques des favoris (seulement si pas en mode favoris)
+            if !showingFavorites && favoriteCount > 0 {
                 HStack {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
-                    Text("\(favoriteCount) garage\(favoriteCount > 1 ? "s" : "") en favori\(favoriteCount > 1 ? "s" : "")")
+                    Text("\(favoriteCount) \(favoriteCount > 1 ? L(CommonTranslations.favoriteGarages) : L(CommonTranslations.favoriteGarage)) \(L(CommonTranslations.inFavorites))")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     Spacer()
@@ -352,10 +381,27 @@ struct ModernGarageCard: View {
     let garage: Garage
     let isFavorite: Bool
     let onToggleFavorite: (Garage) -> Void
+    let userLocation: CLLocationCoordinate2D?
+    // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
+    
+    // Calcul de la distance
+    private var distance: String? {
+        guard let userLocation = userLocation else { return nil }
+        
+        let userCLLocation = CLLocation(latitude: userLocation.latitude, longitude: userLocation.longitude)
+        let garageCLLocation = CLLocation(latitude: garage.latitude, longitude: garage.longitude)
+        let distanceInMeters = userCLLocation.distance(from: garageCLLocation)
+        
+        if distanceInMeters < 1000 {
+            return String(format: "%.0f m", distanceInMeters)
+        } else {
+            return String(format: "%.1f km", distanceInMeters / 1000)
+        }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Header avec nom et favori
+            // Header avec nom, favori et distance
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(garage.nom)
@@ -363,9 +409,22 @@ struct ModernGarageCard: View {
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     
-                    Text(garage.ville)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    HStack {
+                        Text(garage.ville)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        if let distance = distance {
+                            Text("•")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            Text(distance)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.blue)
+                        }
+                    }
                 }
                 
                 Spacer()
@@ -379,140 +438,20 @@ struct ModernGarageCard: View {
             
             // Informations
             VStack(spacing: 12) {
-                GarageInfoRow(icon: "location.fill", title: "Adresse", value: garage.adresse, color: .blue)
-                GarageInfoRow(icon: "phone.fill", title: "Téléphone", value: garage.telephone, color: .green)
-                GarageInfoRow(icon: "clock.fill", title: "Horaires", value: garage.horaires, color: .orange)
+                ClickableAddressRow(garage: garage)
+                ClickablePhoneRow(phoneNumber: garage.telephone)
+                GarageInfoRow(icon: "clock.fill", title: L(CommonTranslations.hours), value: garage.horaires, color: .orange)
+                
+                // Services disponibles
+                if !garage.services.isEmpty {
+                    GarageServicesRow(services: garage.services)
+                }
             }
         }
         .padding(20)
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
-    }
-}
-
-// MARK: - Modern Garages Map View
-struct ModernGaragesMapView: View {
-    let garages: [Garage]
-    @Binding var favoriteGarages: Set<String>
-    let onToggleFavorite: (Garage) -> Void
-    @ObservedObject var locationService: LocationService
-    
-    @State private var cameraPosition: MapCameraPosition = .automatic
-    @State private var selectedGarage: Garage? = nil
-    
-    private var userLocation: CLLocationCoordinate2D? {
-        locationService.currentLocation?.coordinate
-    }
-    
-    var body: some View {
-        ZStack {
-            Map(position: $cameraPosition) {
-                // Position utilisateur
-                if let userLoc = userLocation {
-                    Annotation("Ma position", coordinate: userLoc) {
-                        ZStack {
-                            // Cercle de précision
-                            Circle()
-                                .stroke(Color.blue.opacity(0.3), lineWidth: 2)
-                                .fill(Color.blue.opacity(0.1))
-                                .frame(width: max(20, min(100, (locationService.currentLocation?.horizontalAccuracy ?? 100) / 5)), 
-                                       height: max(20, min(100, (locationService.currentLocation?.horizontalAccuracy ?? 100) / 5)))
-                            
-                            // Point central précis
-                            Circle()
-                                .fill(.blue.opacity(0.3))
-                                .frame(width: 20, height: 20)
-                            Circle()
-                                .fill(.blue)
-                                .frame(width: 12, height: 12)
-                                .overlay(
-                                    Circle()
-                                        .stroke((locationService.currentLocation?.horizontalAccuracy ?? 100) < 50 ? .green : (locationService.currentLocation?.horizontalAccuracy ?? 100) < 200 ? .orange : .red, lineWidth: 2)
-                                        .frame(width: 16, height: 16)
-                                )
-                        }
-                    }
-                }
-                
-                // Marqueurs garages
-                ForEach(garages) { garage in
-                    Annotation(
-                        garage.nom,
-                        coordinate: CLLocationCoordinate2D(latitude: garage.latitude, longitude: garage.longitude)
-                    ) {
-                        GarageMapPin(
-                            garage: garage,
-                            isFavorite: favoriteGarages.contains(garage.id.uuidString)
-                        )
-                    }
-                }
-            }
-            .mapStyle(.standard(elevation: .realistic))
-            .mapControls {
-                MapUserLocationButton()
-                MapCompass()
-                MapScaleView()
-            }
-            .onAppear {
-                centerOnUserLocation()
-            }
-            .onReceive(locationService.$currentLocation) { newLocation in
-                if newLocation != nil && userLocation == nil {
-                    centerOnUserLocation()
-                }
-            }
-        }
-    }
-    
-    private func centerOnUserLocation() {
-        if let userLoc = userLocation {
-            withAnimation(.easeInOut(duration: 1.0)) {
-                cameraPosition = .region(
-                    MKCoordinateRegion(
-                        center: userLoc,
-                        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                    )
-                )
-            }
-        }
-    }
-}
-
-// MARK: - Garage Map Pin
-struct GarageMapPin: View {
-    let garage: Garage
-    let isFavorite: Bool
-    
-    var body: some View {
-        ZStack {
-            // Pin principal
-            Image(systemName: "mappin.circle.fill")
-                .font(.title)
-                .foregroundColor(.blue)
-                .background(
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 32, height: 32)
-                )
-                .shadow(radius: 3)
-            
-            // Étoile pour les favoris
-            if isFavorite {
-                VStack {
-                    Image(systemName: "star.fill")
-                        .font(.caption)
-                        .foregroundColor(.yellow)
-                        .background(
-                            Circle()
-                                .fill(.white)
-                                .frame(width: 16, height: 16)
-                        )
-                        .offset(x: 12, y: -12)
-                    Spacer()
-                }
-            }
-        }
     }
 }
 
@@ -539,6 +478,396 @@ struct GarageInfoRow: View {
             }
             
             Spacer()
+        }
+    }
+}
+
+// MARK: - Clickable Phone Row
+struct ClickablePhoneRow: View {
+    let phoneNumber: String
+    // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
+    
+    private var cleanPhoneNumber: String {
+        // Enlève les espaces et formatage pour créer le lien tel:
+        phoneNumber.replacingOccurrences(of: " ", with: "")
+    }
+    
+    private var isPhoneAvailable: Bool {
+        phoneNumber != L(CommonTranslations.notAvailable) && !phoneNumber.isEmpty
+    }
+    
+    var body: some View {
+        if isPhoneAvailable {
+            // Numéro cliquable si disponible
+            Button(action: {
+                makePhoneCall()
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "phone.fill")
+                        .foregroundColor(.green)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L(CommonTranslations.phone))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(phoneNumber)
+                            .font(.subheadline)
+                            .foregroundColor(.green)
+                            .fontWeight(.medium)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "phone.badge.plus")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.green.opacity(0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.green.opacity(0.2), lineWidth: 1)
+            )
+        } else {
+            // Affichage simple si numéro non disponible
+            HStack(spacing: 12) {
+                Image(systemName: "phone.slash")
+                    .foregroundColor(.gray)
+                    .frame(width: 20)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                        Text(L(CommonTranslations.phone))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(L(CommonTranslations.notAvailable))
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .fontWeight(.medium)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "info.circle")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+            )
+        }
+    }
+    
+    private func makePhoneCall() {
+        guard let phoneURL = URL(string: "tel:\(cleanPhoneNumber)") else {
+            print("❌ Numéro de téléphone invalide: \(phoneNumber)")
+            return
+        }
+        
+        if UIApplication.shared.canOpenURL(phoneURL) {
+            UIApplication.shared.open(phoneURL)
+            print("📞 Appel vers \(phoneNumber)")
+            
+            // Feedback haptique
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+        } else {
+            print("❌ Impossible d'effectuer l'appel depuis ce dispositif")
+        }
+    }
+}
+
+// MARK: - Garage Services Row
+struct GarageServicesRow: View {
+    let services: [String]
+    // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "wrench.and.screwdriver.fill")
+                    .foregroundColor(.purple)
+                    .frame(width: 20)
+                
+                Text(L(CommonTranslations.services))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+            }
+            
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 6) {
+                ForEach(services.prefix(4), id: \.self) { service in
+                    Text(service)
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.purple.opacity(0.1))
+                        .foregroundColor(.purple)
+                        .clipShape(Capsule())
+                }
+            }
+            
+            if services.count > 4 {
+                Text(String(format: L(CommonTranslations.otherServices), services.count - 4))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - Empty Favorites Message View
+struct EmptyFavoritesMessageView: View {
+    let onShowAllGarages: () -> Void
+    // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "star.slash")
+                .font(.system(size: 48))
+                .foregroundColor(.yellow)
+                .frame(width: 80, height: 80)
+                .background(Color.yellow.opacity(0.1))
+                .clipShape(Circle())
+            
+            VStack(spacing: 8) {
+                Text(L(CommonTranslations.noFavoriteGarage))
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Text(L(CommonTranslations.addFavoritesMessage))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            
+            Button(L(CommonTranslations.viewAllGarages)) {
+                onShowAllGarages()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(32)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+    }
+}
+
+// MARK: - Empty Garages View
+struct EmptyGaragesView: View {
+    let hasLocation: Bool
+    let onRequestLocation: () -> Void
+    let onRefreshNearby: () -> Void
+    // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: hasLocation ? "building.2" : "location.slash")
+                .font(.system(size: 48))
+                .foregroundColor(.gray)
+                .frame(width: 80, height: 80)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(Circle())
+            
+            VStack(spacing: 8) {
+                Text(hasLocation ? L(CommonTranslations.noGarageFound) : L(CommonTranslations.locationRequiredEmpty))
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Text(hasLocation ? 
+                     L(CommonTranslations.tryRefresh) :
+                     L(CommonTranslations.authorizeLocation))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            
+            if hasLocation {
+                Button(L(CommonTranslations.refresh)) {
+                    onRefreshNearby()
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button(L(CommonTranslations.authorizeGeolocation)) {
+                    onRequestLocation()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(32)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+    }
+}
+
+// MARK: - Location Permission Banner
+struct LocationPermissionBanner: View {
+    let onRequestPermission: () -> Void
+    let onOpenSettings: () -> Void
+    // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: "location.slash")
+                    .foregroundColor(.orange)
+                    .font(.title2)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L(CommonTranslations.locationDisabled))
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text(L(CommonTranslations.authorizeAccess))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+            }
+            
+            HStack(spacing: 12) {
+                Button(L(CommonTranslations.authorize)) {
+                    onRequestPermission()
+                }
+                .buttonStyle(.bordered)
+                
+                Button(L(CommonTranslations.settings)) {
+                    onOpenSettings()
+                }
+                .buttonStyle(.borderedProminent)
+                
+                Spacer()
+            }
+        }
+        .padding(16)
+        .background(Color.orange.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - Location Success Banner
+struct LocationSuccessBanner: View {
+    // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "location.fill")
+                .foregroundColor(.green)
+                .font(.title2)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L(CommonTranslations.nearbyGaragesLoaded))
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text(L(CommonTranslations.basedCurrentLocation))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding(16)
+        .background(Color.green.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - Clickable Address Row
+struct ClickableAddressRow: View {
+    let garage: Garage
+    // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
+    
+    var body: some View {
+        Button(action: {
+            openInMaps()
+        }) {
+            HStack(spacing: 12) {
+                Image(systemName: "location.fill")
+                    .foregroundColor(.blue)
+                    .frame(width: 20)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L(CommonTranslations.address))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(garage.adresse)
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                        .fontWeight(.medium)
+                        .multilineTextAlignment(.leading)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "map")
+                    .font(.caption)
+                    .foregroundColor(.blue)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.blue.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private func openInMaps() {
+        let addressString = "\(garage.adresse), \(garage.ville)"
+        
+        // Construire l'URL pour Apple Maps avec l'adresse et les coordonnées
+        var urlComponents = URLComponents(string: "http://maps.apple.com/")!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "ll", value: "\(garage.latitude),\(garage.longitude)"),
+            URLQueryItem(name: "q", value: garage.nom),
+            URLQueryItem(name: "address", value: addressString)
+        ]
+        
+        if let mapsURL = urlComponents.url, UIApplication.shared.canOpenURL(mapsURL) {
+            UIApplication.shared.open(mapsURL)
+            print("🗺️ Ouverture d'Apple Maps pour: \(garage.nom)")
+            
+            // Feedback haptique
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+        } else {
+            print("❌ Impossible d'ouvrir Apple Maps")
+        }
+    }
+}
+
+// MARK: - GaragesView Extension
+extension GaragesView {
+    /// Actualise les garages de manière asynchrone (pour pull-to-refresh) - OPTIMISÉ
+    private func refreshGaragesAsync() async {
+        // ✅ Délai réduit pour une meilleure réactivité
+        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconde
+        
+        await MainActor.run {
+            // ✅ Forcer l'invalidation du cache pour un refresh complet
+            viewModel.invalidateCache()
+            refreshNearbyGarages()
         }
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 
 public struct DashboardView: View {
     @ObservedObject var viewModel: ExpensesViewModel
@@ -7,9 +8,53 @@ public struct DashboardView: View {
     @State private var showingAddExpense = false
     @State private var showingAllExpenses = false
     
+    // ✅ Migration vers système centralisé
+    @EnvironmentObject var localizationService: LocalizationService
+    
+    // Service de location pour les statistiques - Force l'observation avec @ObservedObject
+    @ObservedObject private var rentalService = RentalService.shared
+    
     public init(viewModel: ExpensesViewModel, vehiclesViewModel: VehiclesViewModel) {
         self.viewModel = viewModel
         self.vehiclesViewModel = vehiclesViewModel
+    }
+    
+    // Statistiques de location
+    private var vehiclesWithActiveRentals: Int {
+        let count = vehiclesViewModel.vehicles.filter { vehicle in
+            rentalService.rentalContracts.contains { contract in
+                contract.vehicleId == vehicle.id && 
+                !contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty &&
+                (contract.isActive() || Date() < contract.startDate)
+            }
+        }.count
+        
+        // Debug : afficher la mise à jour dans la console
+        print("🔄 Dashboard - Véhicules avec locations actives: \(count)")
+        return count
+    }
+    
+    private var vehiclesWithPrefilledContracts: Int {
+        let count = vehiclesViewModel.vehicles.filter { vehicle in
+            rentalService.rentalContracts.contains { contract in
+                contract.vehicleId == vehicle.id && 
+                contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty
+            }
+        }.count
+        
+        // Debug : afficher la mise à jour dans la console
+        print("🔄 Dashboard - Véhicules avec contrats préremplis: \(count)")
+        return count
+    }
+    
+    private var totalRentalRevenue: Double {
+        let revenue = rentalService.rentalContracts
+            .filter { !$0.renterName.trimmingCharacters(in: .whitespaces).isEmpty }
+            .reduce(0) { $0 + $1.totalPrice }
+        
+        // Debug : afficher la mise à jour dans la console
+        print("🔄 Dashboard - Revenus totaux: \(revenue)€")
+        return revenue
     }
     
     public var body: some View {
@@ -24,6 +69,13 @@ public struct DashboardView: View {
                         total: filteredExpenses.reduce(0) { $0 + $1.amount }, 
                         timeRange: selectedTimeRange,
                         onViewAll: { showingAllExpenses = true }
+                    )
+                    
+                    // Résumé des locations - Toujours visible pour découvrabilité
+                    RentalSummaryCard(
+                        activeRentals: vehiclesWithActiveRentals,
+                        availableVehicles: vehiclesWithPrefilledContracts,
+                        totalRevenue: totalRentalRevenue
                     )
                     
                     // Sélecteur de période moderne
@@ -48,17 +100,10 @@ public struct DashboardView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: rentalService.rentalContracts.count) {
+                // ✅ Force la recalculation des propriétés calculées pour une réactivité optimale
+            }
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(destination: LocationTestView()) {
-                        Image(systemName: "location.circle")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.blue)
-                    }
-                    .accessibilityLabel("Test géolocalisation")
-                }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         showingAddExpense = true
@@ -78,7 +123,7 @@ public struct DashboardView: View {
                             .clipShape(Circle())
                             .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
                     }
-                    .accessibilityLabel("Ajouter une dépense")
+                    .accessibilityLabel(L(CommonTranslations.add) + " " + L(CommonTranslations.expenses))
                 }
             }
             .sheet(isPresented: $showingAddExpense) {
@@ -118,15 +163,17 @@ public struct DashboardView: View {
 
 // MARK: - Header View
 struct HeaderView: View {
+    @EnvironmentObject var localizationService: LocalizationService
+    
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Bonjour ! 👋")
+                Text(L(CommonTranslations.hello))
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                Text("Voici un aperçu de vos dépenses")
+                Text(L(CommonTranslations.overview))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -139,21 +186,22 @@ struct HeaderView: View {
 // MARK: - Time Range Picker
 struct TimeRangePicker: View {
     @Binding var selectedTimeRange: TimeRange
+    @EnvironmentObject var localizationService: LocalizationService
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Période")
+            Text(L(CommonTranslations.period))
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(TimeRange.allCases) { range in
-                        TimeRangeButton(
-                            title: range.rawValue,
-                            isSelected: selectedTimeRange == range
-                        ) {
+                                            ForEach(TimeRange.allCases) { range in
+                            TimeRangeButton(
+                                title: range.localizedName(language: localizationService.currentLanguage),
+                                isSelected: selectedTimeRange == range
+                            ) {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 selectedTimeRange = range
                             }
@@ -210,18 +258,19 @@ struct ExpenseSummaryCard: View {
     let total: Double
     let timeRange: TimeRange
     let onViewAll: () -> Void
+    @EnvironmentObject var localizationService: LocalizationService
     
     var body: some View {
         VStack(spacing: 20) {
             // En-tête de la carte
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Total des dépenses")
+                    Text(L(CommonTranslations.totalExpenses))
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
                     
-                    Text(timeRange.rawValue)
+                    Text(timeRange.localizedName(language: localizationService.currentLanguage))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -249,7 +298,7 @@ struct ExpenseSummaryCard: View {
                 HStack {
                     Image(systemName: "list.bullet")
                         .font(.subheadline)
-                    Text("Voir toutes les dépenses")
+                    Text(L(CommonTranslations.viewAllExpenses))
                         .font(.subheadline)
                         .fontWeight(.medium)
                 }
@@ -268,12 +317,75 @@ struct ExpenseSummaryCard: View {
     }
 }
 
+// MARK: - Rental Summary Card
+struct RentalSummaryCard: View {
+    let activeRentals: Int
+    let availableVehicles: Int
+    let totalRevenue: Double
+    @EnvironmentObject var localizationService: LocalizationService
+    
+    var body: some View {
+        HStack {
+            HStack(spacing: 12) {
+                // Icône moderne
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [.green.opacity(0.15), .green.opacity(0.05)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: "key.fill")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.green)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L(CommonTranslations.rentals))
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    // Info contextuelle simple et claire
+                    Text(activeRentals > 0 ? "\(activeRentals) \(activeRentals > 1 ? L(CommonTranslations.actives) : L(CommonTranslations.active))" : L(CommonTranslations.noActiveRental))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            // Focus sur la métrique financière principale
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(String(format: "%.0f €", totalRevenue))
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(totalRevenue > 0 ? .green : .secondary)
+                
+                Text(L(CommonTranslations.revenue))
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(24)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+    }
+}
+
 // MARK: - Recent Expenses Section
 struct RecentExpensesSection: View {
     let expenses: [Expense]
     let vehicles: [Vehicle]
     let onViewAll: () -> Void
     let onAddExpense: () -> Void
+    @EnvironmentObject var localizationService: LocalizationService
     
     private var recentExpenses: [Expense] {
         Array(expenses.sorted { $0.date > $1.date }.prefix(5))
@@ -283,14 +395,14 @@ struct RecentExpensesSection: View {
         VStack(alignment: .leading, spacing: 16) {
             // En-tête de section
             HStack {
-                Text("Dernières dépenses")
+                Text(L(CommonTranslations.recentExpenses))
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 Spacer()
                 
                 if !expenses.isEmpty {
-                    Button("Voir tout") {
+                    Button(L(CommonTranslations.viewAllExpenses)) {
                         onViewAll()
                     }
                     .font(.subheadline)
@@ -319,6 +431,7 @@ struct RecentExpensesSection: View {
 // MARK: - Empty Expenses View
 struct EmptyExpensesView: View {
     let onAddExpense: () -> Void
+    @EnvironmentObject var localizationService: LocalizationService
     
     var body: some View {
         VStack(spacing: 20) {
@@ -331,12 +444,12 @@ struct EmptyExpensesView: View {
                 .clipShape(Circle())
             
             VStack(spacing: 8) {
-                Text("Aucune dépense")
+                Text(L(CommonTranslations.noExpenses))
                     .font(.title3)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
-                Text("Commencez par ajouter votre première dépense pour suivre vos finances")
+                Text(L(CommonTranslations.addFirstExpense))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -345,7 +458,7 @@ struct EmptyExpensesView: View {
             Button(action: onAddExpense) {
                 HStack {
                     Image(systemName: "plus")
-                    Text("Ajouter une dépense")
+                    Text(L(CommonTranslations.addExpense))
                 }
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -463,6 +576,7 @@ struct ModernExpenseRowView: View {
 struct ModernBarChartView: View {
     let expenses: [Expense]
     let timeRange: TimeRange
+    @EnvironmentObject var localizationService: LocalizationService
     
     // Regroupe les dépenses par période
     private var groupedData: [(String, Double)] {
@@ -494,13 +608,13 @@ struct ModernBarChartView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Évolution des dépenses")
+            Text(L(CommonTranslations.expensesEvolution))
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
             
             if groupedData.isEmpty {
-                Text("Aucune donnée à afficher")
+                Text(L(CommonTranslations.noDataToDisplay))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)

@@ -15,6 +15,19 @@ struct PersistenceService {
         }
     }
 
+    /// Sauvegarde un seul objet Codable dans un fichier JSON local
+    static func save<T: Codable>(_ object: T, to filename: String) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        do {
+            let data = try encoder.encode(object)
+            let url = getDocumentsDirectory().appendingPathComponent(filename)
+            try data.write(to: url)
+        } catch {
+            print("Erreur lors de la sauvegarde de \(filename):", error)
+        }
+    }
+
     /// Charge une liste d'objets Codable depuis un fichier JSON local
     static func load<T: Codable>(_ type: T.Type, from filename: String) -> T? {
         let url = getDocumentsDirectory().appendingPathComponent(filename)

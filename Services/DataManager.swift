@@ -19,7 +19,7 @@ class DataManager {
     private var expenses: [Expense] = []
     private var maintenances: [Maintenance] = []
     private var garages: [Garage] = []
-    private var rentals: [RentalInfo] = []
+    private var rentals: [RentalContract] = []
     
     // MARK: - Initialisation
     
@@ -51,7 +51,7 @@ class DataManager {
         }
         
         if let data = UserDefaults.standard.data(forKey: StorageKeys.rentals),
-           let decoded = try? JSONDecoder().decode([RentalInfo].self, from: data) {
+           let decoded = try? JSONDecoder().decode([RentalContract].self, from: data) {
             rentals = decoded
         }
     }
@@ -112,8 +112,24 @@ class DataManager {
         saveData()
     }
     
+    func updateExpense(_ expense: Expense) {
+        if let index = expenses.firstIndex(where: { $0.id == expense.id }) {
+            expenses[index] = expense
+            saveData()
+        }
+    }
+    
+    func deleteExpense(_ expense: Expense) {
+        expenses.removeAll { $0.id == expense.id }
+        saveData()
+    }
+    
     func getExpenses(for vehicleId: UUID) -> [Expense] {
         return expenses.filter { $0.vehicleId == vehicleId }
+    }
+    
+    func getAllExpenses() -> [Expense] {
+        return expenses
     }
     
     // MARK: - Méthodes pour les maintenances
@@ -123,14 +139,42 @@ class DataManager {
         saveData()
     }
     
+    func updateMaintenance(_ maintenance: Maintenance) {
+        if let index = maintenances.firstIndex(where: { $0.id == maintenance.id }) {
+            maintenances[index] = maintenance
+            saveData()
+        }
+    }
+    
+    func deleteMaintenance(_ maintenance: Maintenance) {
+        maintenances.removeAll { $0.id == maintenance.id }
+        saveData()
+    }
+    
     func getMaintenances(for vehicleId: UUID) -> [Maintenance] {
         return maintenances.filter { $0.vehicleId == vehicleId }
+    }
+    
+    func getAllMaintenances() -> [Maintenance] {
+        return maintenances
     }
     
     // MARK: - Méthodes pour les garages
     
     func addGarage(_ garage: Garage) {
         garages.append(garage)
+        saveData()
+    }
+    
+    func updateGarage(_ garage: Garage) {
+        if let index = garages.firstIndex(where: { $0.id == garage.id }) {
+            garages[index] = garage
+            saveData()
+        }
+    }
+    
+    func deleteGarage(_ garage: Garage) {
+        garages.removeAll { $0.id == garage.id }
         saveData()
     }
     
@@ -144,13 +188,29 @@ class DataManager {
     
     // MARK: - Méthodes pour les locations
     
-    func addRental(_ rental: RentalInfo) {
+    func addRental(_ rental: RentalContract) {
         rentals.append(rental)
         saveData()
     }
     
-    func getRentals(for vehicleId: UUID) -> [RentalInfo] {
+    func getRentals(for vehicleId: UUID) -> [RentalContract] {
         return rentals.filter { $0.vehicleId == vehicleId }
+    }
+    
+    func updateRental(_ rental: RentalContract) {
+        if let index = rentals.firstIndex(where: { $0.id == rental.id }) {
+            rentals[index] = rental
+            saveData()
+        }
+    }
+    
+    func deleteRental(_ rental: RentalContract) {
+        rentals.removeAll { $0.id == rental.id }
+        saveData()
+    }
+    
+    func getAllRentals() -> [RentalContract] {
+        return rentals
     }
     
     // MARK: - Méthodes utilitaires

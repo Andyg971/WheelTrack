@@ -9,10 +9,38 @@ public struct VehiclesView: View {
     @State private var selectedFilter: VehicleFilter = .all
     @State private var editingVehicle: Vehicle? = nil
     
+    // ✅ Migration vers système centralisé
+    @EnvironmentObject var localizationService: LocalizationService
+    
+    // Service de location pour détecter les contrats
+    @ObservedObject private var rentalService = RentalService.shared
+    
     init(viewModel: VehiclesViewModel, expensesViewModel: ExpensesViewModel, maintenanceViewModel: MaintenanceViewModel) {
         self.viewModel = viewModel
         self.expensesViewModel = expensesViewModel
         self.maintenanceViewModel = maintenanceViewModel
+    }
+    
+    // Propriétés calculées pour les statistiques de location
+    private var vehiclesWithRentals: Int {
+        viewModel.vehicles.filter { vehicle in
+            hasActiveRental(for: vehicle.id) || hasPrefilledContract(for: vehicle.id)
+        }.count
+    }
+    
+    private func hasActiveRental(for vehicleId: UUID) -> Bool {
+        return rentalService.rentalContracts.contains { contract in
+            contract.vehicleId == vehicleId && 
+            !contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty &&
+            (contract.isActive() || Date() < contract.startDate)
+        }
+    }
+    
+    private func hasPrefilledContract(for vehicleId: UUID) -> Bool {
+        return rentalService.rentalContracts.contains { contract in
+            contract.vehicleId == vehicleId && 
+            contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty
+        }
     }
     
     public var body: some View {
@@ -65,9 +93,11 @@ public struct VehiclesView: View {
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                // Bouton flottant pour ajouter des véhicules
+                // Bouton flottant unifié
                 if !viewModel.vehicles.isEmpty {
-                    Button(action: { showingAddVehicle = true }) {
+                    Button(action: {
+                        showingAddVehicle = true
+                    }) {
                         Image(systemName: "plus")
                             .font(.title2)
                             .fontWeight(.semibold)
@@ -83,6 +113,8 @@ public struct VehiclesView: View {
                             .clipShape(Circle())
                             .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
                     }
+                    .accessibilityLabel(L(CommonTranslations.addVehicle))
+                    .accessibilityHint("Touchez pour ouvrir le formulaire d'ajout de véhicule")
                     .padding(.trailing, 20)
                     .padding(.bottom, 30)
                 }
@@ -115,12 +147,12 @@ public struct VehiclesView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Mes véhicules")
+                            Text(L(CommonTranslations.vehicles))
                                 .font(.largeTitle)
                                 .fontWeight(.bold)
                                 .foregroundColor(.primary)
                             
-                            Text("Gérez votre flotte automobile")
+                            Text(L(CommonTranslations.manageFleet))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -137,7 +169,7 @@ public struct VehiclesView: View {
             VStack(spacing: 20) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Total véhicules")
+                        Text(L(CommonTranslations.totalVehicles))
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.secondary)
@@ -150,12 +182,12 @@ public struct VehiclesView: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(activeVehicleCount)")
+                        Text("\(vehiclesWithRentals)")
                             .font(.title)
                             .fontWeight(.bold)
-                            .foregroundColor(.green)
+                            .foregroundColor(.blue)
                         
-                        Text("actifs")
+                                                    Text(L(CommonTranslations.inRental))
                             .font(.caption)
                             .fontWeight(.medium)
                             .foregroundColor(.secondary)
@@ -165,7 +197,7 @@ public struct VehiclesView: View {
                 // Statistiques détaillées
                 if !viewModel.vehicles.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Répartition par marque")
+                        Text(L(CommonTranslations.brandDistribution))
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -184,7 +216,7 @@ public struct VehiclesView: View {
                                     
                                     Spacer()
                                     
-                                    Text("\(count) véhicule\(count > 1 ? "s" : "")")
+                                    Text("\(count) \(L(CommonTranslations.vehicles).lowercased())")
                                         .font(.subheadline)
                                         .fontWeight(.semibold)
                                         .foregroundColor(.secondary)
@@ -210,7 +242,7 @@ public struct VehiclesView: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.secondary)
             
-            TextField("Rechercher un véhicule...", text: $searchText)
+                            TextField(L(CommonTranslations.searchVehicles) + "...", text: $searchText)
                 .font(.system(size: 16))
                 .textFieldStyle(PlainTextFieldStyle())
             
@@ -237,7 +269,7 @@ public struct VehiclesView: View {
     
     private var modernFiltersSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Filtres")
+            Text(L(CommonTranslations.filters))
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
@@ -246,7 +278,7 @@ public struct VehiclesView: View {
                 HStack(spacing: 12) {
                     ForEach(VehicleFilter.allCases) { filter in
                         ModernVehicleFilterChip(
-                            title: filter.rawValue,
+                            title: filter.localizedName(language: localizationService.currentLanguage),
                             isSelected: selectedFilter == filter
                         ) {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -262,7 +294,7 @@ public struct VehiclesView: View {
     
     private var modernVehicleListSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Tous les véhicules")
+            Text(L(CommonTranslations.all) + " " + L(CommonTranslations.vehicles).lowercased())
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
@@ -275,10 +307,6 @@ public struct VehiclesView: View {
                         onEdit: { editingVehicle = $0 },
                         onDelete: { viewModel.deleteVehicle($0) }
                     )
-                    .onTapGesture {
-                        // TODO: Navigation vers VehicleDetailView quand il sera ajouté à la cible
-                        print("Tap sur véhicule: \(vehicle.brand) \(vehicle.model)")
-                    }
                 }
             }
         }
@@ -304,12 +332,12 @@ public struct VehiclesView: View {
             }
             
             VStack(spacing: 16) {
-                Text("Aucun véhicule")
+                Text(L(CommonTranslations.noVehicles))
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                Text("Ajoutez votre premier véhicule pour commencer le suivi de vos dépenses automobiles")
+                Text(L(CommonTranslations.addFirstVehicle))
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -320,7 +348,7 @@ public struct VehiclesView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 16))
-                    Text("Ajouter un véhicule")
+                    Text(L(CommonTranslations.addVehicle))
                         .fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
@@ -341,10 +369,6 @@ public struct VehiclesView: View {
     }
     
     // MARK: - Computed Properties
-    
-    private var activeVehicleCount: Int {
-        viewModel.vehicles.filter { $0.isActive }.count
-    }
     
     private var brandStats: [(String, Int)] {
         Dictionary(grouping: viewModel.vehicles, by: { $0.brand })
@@ -377,25 +401,28 @@ public struct VehiclesView: View {
     }
 }
 
-// MARK: - Empty Vehicles View
+// MARK: - Accessible Empty Vehicles View
 struct EmptyVehiclesView: View {
     let onAddVehicle: () -> Void
+    @EnvironmentObject var localizationService: LocalizationService
     
     var body: some View {
         VStack(spacing: 24) {
-            // Illustration
+            // Illustration accessible
             Image(systemName: "car.2")
                 .font(.system(size: 64))
                 .foregroundColor(.blue.opacity(0.6))
                 .frame(width: 120, height: 120)
                 .background(Color.blue.opacity(0.1))
                 .clipShape(Circle())
+                .accessibilityHidden(true)
             
             VStack(spacing: 12) {
                 Text("Aucun véhicule enregistré")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Text("Ajoutez votre premier véhicule pour commencer à suivre vos dépenses automobiles")
                     .font(.body)
@@ -404,10 +431,18 @@ struct EmptyVehiclesView: View {
                     .padding(.horizontal, 32)
             }
             
-            Button(action: onAddVehicle) {
+            Button(action: {
+                onAddVehicle()
+                
+                // Feedback haptique pour l'action d'ajout
+                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                impactFeedback.prepare()
+                impactFeedback.impactOccurred()
+            }) {
                 HStack {
                     Image(systemName: "plus")
-                    Text("Ajouter un véhicule")
+                        .accessibilityHidden(true)
+                    Text(L(CommonTranslations.addVehicle))
                 }
                 .font(.headline)
                 .fontWeight(.semibold)
@@ -423,10 +458,17 @@ struct EmptyVehiclesView: View {
                 )
                 .clipShape(Capsule())
                 .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
+                .scaleEffect(1.0)
+                .animation(.easeInOut(duration: 0.1), value: false)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Ajouter votre premier véhicule")
+            .accessibilityHint("Ouvre le formulaire pour enregistrer un nouveau véhicule dans votre flotte")
+            .accessibilityAddTraits(.isButton)
         }
         .padding(40)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Aucun véhicule enregistré. Ajoutez votre premier véhicule pour commencer à suivre vos dépenses automobiles.")
     }
 }
 
@@ -437,7 +479,7 @@ struct VehiclesHeaderView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Mes véhicules")
+                Text("Véhicules")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
@@ -498,7 +540,14 @@ struct FilterButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            action()
+            
+            // Feedback haptique pour les filtres
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.prepare()
+            impactFeedback.impactOccurred()
+        }) {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -525,8 +574,14 @@ struct FilterButton: View {
                     x: 0,
                     y: isSelected ? 4 : 1
                 )
+                .scaleEffect(isSelected ? 1.05 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel("Filtre \(title)")
+        .accessibilityHint("Filtrer les véhicules par \(title)")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityValue(isSelected ? "Sélectionné" : "Non sélectionné")
     }
 }
 
@@ -562,180 +617,152 @@ struct ModernVehicleCard: View {
     var onDelete: (Vehicle) -> Void
     @State private var showDeleteAlert = false
     
+    // Service de location pour détecter les contrats
+    @ObservedObject private var rentalService = RentalService.shared
+    
+    // Force la mise à jour quand les contrats changent
+    private var contractsForVehicle: [RentalContract] {
+        rentalService.rentalContracts.filter { $0.vehicleId == vehicle.id }
+    }
+    
     // Calcule le total des dépenses pour ce véhicule
     var totalExpenses: Double {
         expensesViewModel.expenses.filter { $0.vehicleId == vehicle.id }.reduce(0) { $0 + $1.amount }
     }
     
-    // Calcule les dépenses par catégorie
-    var maintenanceExpenses: Double {
-        expensesViewModel.expenses.filter { 
-            $0.vehicleId == vehicle.id && $0.category == .maintenance 
-        }.reduce(0) { $0 + $1.amount }
+    // Détection des contrats de location
+    private var hasActiveRental: Bool {
+        contractsForVehicle.contains { contract in
+            !contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty &&
+            contract.isActive()
+        }
     }
     
-    var fuelExpenses: Double {
-        expensesViewModel.expenses.filter { 
-            $0.vehicleId == vehicle.id && $0.category == .fuel 
-        }.reduce(0) { $0 + $1.amount }
+    private var hasPrefilledContract: Bool {
+        contractsForVehicle.contains { contract in
+            contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty
+        }
     }
     
-    var body: some View {
-        VStack(spacing: 0) {
-            // En-tête de la carte
-            HStack(spacing: 16) {
-                // Icône du véhicule
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [vehicleColor, vehicleColor.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+    private var rentalStatus: String {
+        if hasActiveRental {
+            return "En location"
+        } else if hasPrefilledContract {
+            return "Disponible"
+        } else {
+            return ""
+        }
+    }
+    
+    // MARK: - Rental Badge
+    @ViewBuilder
+    private func rentalBadgeView() -> some View {
+        if hasActiveRental {
+            Text("Loué")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.green)
+                .clipShape(Capsule())
+        } else if hasPrefilledContract {
+            // ✅ Badge orange pour contrats pré-remplis
+            Text("Prêt")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.orange)
+                .clipShape(Capsule())
+        } else if vehicle.isAvailableForRent {
+            Text("Libre")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.blue)
+                .clipShape(Capsule())
+        }
+    }
+    
+        var body: some View {
+        HStack(spacing: 16) {
+            // Icône du véhicule
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [vehicleColor, vehicleColor.opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-                    .frame(width: 56, height: 56)
-                    .overlay(
-                        Image(systemName: vehicleIcon)
-                            .foregroundColor(.white)
-                            .font(.system(size: 24, weight: .semibold))
-                    )
-                
-                // Informations principales
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(vehicle.brand) \(vehicle.model)")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    
-                    HStack(spacing: 8) {
-                        Text("\(vehicle.year)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("•")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text(vehicle.fuelType.rawValue)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-                
-                // Statut actif/inactif
-                Circle()
-                    .fill(vehicle.isActive ? Color.green : Color.gray)
-                    .frame(width: 12, height: 12)
-                    .overlay(
-                        Circle()
-                            .stroke(Color(.systemBackground), lineWidth: 2)
-                    )
-            }
-            .padding(20)
+                )
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Image(systemName: vehicleIcon)
+                        .foregroundColor(.white)
+                        .font(.system(size: 20, weight: .semibold))
+                )
             
-            // Divider
-            Divider()
-                .padding(.horizontal, 20)
-            
-            // Statistiques détaillées
-            VStack(spacing: 16) {
-                // Kilométrage
-                HStack(spacing: 12) {
-                    Image(systemName: "speedometer")
+            // Informations principales
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(vehicle.brand) \(vehicle.model)")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                HStack(spacing: 8) {
+                    Text(String(vehicle.year))
                         .font(.subheadline)
-                        .foregroundColor(.blue)
-                        .frame(width: 20)
+                        .foregroundColor(.secondary)
                     
-                    Text("Kilométrage")
+                    Text("•")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
+                        .foregroundColor(.secondary)
                     
                     Text("\(Int(vehicle.mileage).formatted()) km")
                         .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                }
-                
-                // Dépenses totales
-                HStack(spacing: 12) {
-                    Image(systemName: "creditcard.fill")
-                        .font(.subheadline)
-                        .foregroundColor(.purple)
-                        .frame(width: 20)
-                    
-                    Text("Dépenses totales")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(.secondary)
                     
                     Spacer()
                     
-                    Text("\(totalExpenses, specifier: "%.2f") €")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                }
-                
-                // Grille des statistiques
-                HStack(spacing: 16) {
-                    ModernStatCard(
-                        title: "Carburant",
-                        value: String(format: "%.0f €", fuelExpenses),
-                        icon: "fuelpump.fill",
-                        color: .green
-                    )
-                    
-                    ModernStatCard(
-                        title: "Maintenance",
-                        value: String(format: "%.0f €", maintenanceExpenses),
-                        icon: "wrench.fill",
-                        color: .orange
-                    )
+                    rentalBadgeView()
                 }
             }
-            .padding(20)
             
-            // Actions
-            HStack(spacing: 16) {
-                Button(action: { onEdit(vehicle) }) {
-                    HStack {
-                        Image(systemName: "pencil")
-                        Text("Modifier")
-                    }
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.blue)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.blue.opacity(0.1))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(PlainButtonStyle())
+            // Dépenses totales + Menu actions
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("\(totalExpenses, specifier: "%.0f") €")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
                 
-                Button(action: { showDeleteAlert = true }) {
-                    HStack {
-                        Image(systemName: "trash")
-                        Text("Supprimer")
+                HStack(spacing: 8) {
+                    // Statut actif/inactif
+                    Circle()
+                        .fill(vehicle.isActive ? Color.green : Color.gray)
+                        .frame(width: 8, height: 8)
+                    
+                    // Menu d'actions
+                    Menu {
+                        Button(action: { onEdit(vehicle) }) {
+                            Label("Modifier", systemImage: "pencil")
+                        }
+                        Button(role: .destructive, action: { showDeleteAlert = true }) {
+                            Label("Supprimer", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 18))
+                            .foregroundColor(.secondary)
                     }
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.red)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.red.opacity(0.1))
-                    .clipShape(Capsule())
                 }
-                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
         }
+        .padding(16)
         .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
         .alert(isPresented: $showDeleteAlert) {
             Alert(
                 title: Text("Supprimer le véhicule ?"),
@@ -802,11 +829,23 @@ struct ModernStatCard: View {
 }
 
 public enum VehicleFilter: String, CaseIterable, Identifiable {
-    case all = "Tous"
-    case active = "Actifs"
-    case inactive = "Inactifs"
+    case all = "all"
+    case active = "active"
+    case inactive = "inactive"
     
     public var id: String { self.rawValue }
+    
+    /// Retourne le libellé localisé pour le filtre
+    public func localizedName(language: String = "fr") -> String {
+        switch self {
+        case .all:
+            return language == "en" ? "All" : "Tous"
+        case .active:
+            return language == "en" ? "Active" : "Actifs"
+        case .inactive:
+            return language == "en" ? "Inactive" : "Inactifs"
+        }
+    }
 }
 
 #Preview {
@@ -855,15 +894,16 @@ struct ModernVehicleFilterChip: View {
 
 struct FilterEmptyStateView: View {
     let filter: VehicleFilter
+    @EnvironmentObject var localizationService: LocalizationService
     
     var body: some View {
         VStack(spacing: 16) {
-            Text("Aucun véhicule")
+            Text(L(CommonTranslations.noVehicles))
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
             
-            Text("Aucun véhicule ne correspond au filtre '\(filter.rawValue)'")
+            Text("\(L(CommonTranslations.noFilterMatch)) '\(filter.localizedName(language: localizationService.currentLanguage))'")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
