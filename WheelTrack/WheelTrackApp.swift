@@ -10,11 +10,19 @@ import SwiftUI
 @main
 struct WheelTrackApp: App {
     @StateObject private var localizationService = LocalizationService.shared
+    @StateObject private var tutorialService = TutorialService.shared
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(localizationService)
+                .fullScreenCover(isPresented: $tutorialService.shouldShowTutorial) {
+                    TutorialView {
+                        // Callback quand le tutoriel se termine
+                        tutorialService.completeTutorial()
+                    }
+                    .environmentObject(localizationService)
+                }
         }
     }
 }
