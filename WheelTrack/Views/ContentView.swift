@@ -2,21 +2,22 @@ import SwiftUI
 import CoreLocation
 
 struct ContentView: View {
-    @ObservedObject private var signInService = AppleSignInService.shared
+    @EnvironmentObject var signInService: AppleSignInService
     @EnvironmentObject var localizationService: LocalizationService
     @StateObject private var vehiclesViewModel = VehiclesViewModel()
     @StateObject private var expensesViewModel = ExpensesViewModel()
     @StateObject private var maintenanceViewModel = MaintenanceViewModel()
     @State private var isLoading = true
     @State private var selectedMainTab = 0
+    @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @ObservedObject private var locationService = LocationService.shared
     
     var body: some View {
-        Group {
+        ZStack {
             if isLoading {
                 // Écran de chargement amélioré
-                modernLoadingView
-            } else if signInService.userIdentifier != nil {
+                AnyView(modernLoadingView)
+            } else if signInService.userIdentifier != nil && hasCompletedOnboarding {
                 NavigationStack {
                     TabView(selection: $selectedMainTab) {
                         // 1. Tableau de bord - Vue d'ensemble
@@ -82,7 +83,15 @@ struct ContentView: View {
                     setupAppConfiguration()
                 }
             } else {
-                WelcomeView()
+                // Afficher l'onboarding si l'utilisateur n'est pas connecté OU n'a pas terminé l'onboarding
+                OnboardingView()
+                    .onReceive(NotificationCenter.default.publisher(for: .userDidSignIn)) { _ in
+                        // Marquer l'onboarding comme terminé quand l'utilisateur se connecte
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            hasCompletedOnboarding = true
+                            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+                        }
+                    }
             }
         }
         .onAppear {

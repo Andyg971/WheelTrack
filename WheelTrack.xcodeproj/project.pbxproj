@@ -383,9 +383,9 @@
 				DEVELOPMENT_ASSET_PATHS = "\"WheelTrack/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WheelTrack utilise votre localisation en temps réel pour afficher les garages proches de vous et calculer les itinéraires. L'accès est nécessaire uniquement lorsque vous utilisez l'application.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-                                INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WheelTrack utilise votre localisation en temps réel pour afficher les garages proches de vous et calculer les itinéraires. L'accès est nécessaire uniquement lorsque vous utilisez l'application.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -413,9 +413,9 @@
 				DEVELOPMENT_ASSET_PATHS = "\"WheelTrack/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WheelTrack utilise votre localisation en temps réel pour afficher les garages proches de vous et calculer les itinéraires. L'accès est nécessaire uniquement lorsque vous utilisez l'application.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-                                INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WheelTrack utilise votre localisation en temps réel pour afficher les garages proches de vous et calculer les itinéraires. L'accès est nécessaire uniquement lorsque vous utilisez l'application.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

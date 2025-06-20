@@ -4,7 +4,11 @@ import AuthenticationServices
 /// Service pour gérer l'authentification avec Sign in with Apple
 final class AppleSignInService: NSObject, ObservableObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     static let shared = AppleSignInService()
-    private override init() {}
+    
+    override init() {
+        super.init()
+        loadUserIdentifier()
+    }
 
     /// Stocke l'identifiant utilisateur Apple (persistant si besoin)
     @Published var userIdentifier: String? {
@@ -63,11 +67,14 @@ final class AppleSignInService: NSObject, ObservableObject, ASAuthorizationContr
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
+            print("🎉 Apple Sign In authorization réussie!")
+            signIn(with: appleIDCredential)
             completion?(.success(appleIDCredential.user))
         }
     }
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        print("❌ Apple Sign In error: \(error.localizedDescription)")
         completion?(.failure(error))
     }
     

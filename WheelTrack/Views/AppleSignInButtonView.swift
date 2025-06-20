@@ -3,57 +3,72 @@ import AuthenticationServices
 
 /// Vue SwiftUI pour afficher le bouton 'Se connecter avec Apple' et gérer la connexion
 struct AppleSignInButtonView: View {
-    @State private var signInStatus: String = ""
-    @State private var isSignedIn: Bool = AppleSignInService.shared.userIdentifier != nil
+    @EnvironmentObject var appleSignInService: AppleSignInService
+    @State private var isLoading = false
     @State private var showAlert = false
-
+    @State private var alertMessage = ""
+    
     var body: some View {
-        VStack(spacing: 20) {
-            if isSignedIn {
-                Text(L(CommonTranslations.connectedWithApple))
-                    .font(.headline)
-                Button(L(CommonTranslations.signOut)) {
-                    AppleSignInService.shared.userIdentifier = nil
-                    isSignedIn = false
+        Button(action: signInWithApple) {
+            HStack(spacing: 12) {
+                Image(systemName: "applelogo")
+                    .font(.system(size: 20, weight: .medium))
+                
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else {
+                    Text("Se connecter avec Apple")
+                        .font(.system(size: 17, weight: .semibold))
                 }
-                .foregroundColor(.red)
-            } else {
-                SignInWithAppleButton(
-                    .signIn,
-                    onRequest: { request in
-                        request.requestedScopes = [.fullName, .email]
-                    },
-                    onCompletion: { result in
-                        switch result {
-                        case .success(let authResults):
-                            if let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential {
-                                AppleSignInService.shared.userIdentifier = appleIDCredential.user
-                                isSignedIn = true
-                                signInStatus = L(CommonTranslations.connectionSuccessful)
-                            }
-                        case .failure(let error):
-                            signInStatus = "Erreur : \(error.localizedDescription)"
-                            showAlert = true
-                        }
-                    }
-                )
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 45)
             }
-            if !signInStatus.isEmpty {
-                Text(signInStatus)
-                    .foregroundColor(isSignedIn ? .green : .red)
-            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(Color.black)
+            .cornerRadius(12)
         }
-        .padding()
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text(L(CommonTranslations.connectionError)), message: Text(signInStatus), dismissButton: .default(Text(L(CommonTranslations.ok))))
+        .disabled(isLoading)
+        .alert("Erreur de connexion", isPresented: $showAlert) {
+            Button("OK") { }
+        } message: {
+            Text(alertMessage)
+        }
+    }
+    
+    private func signInWithApple() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            alertMessage = "Impossible d'accéder à la fenêtre de l'application"
+            showAlert = true
+            return
+        }
+        
+        isLoading = true
+        
+        appleSignInService.startSignInWithAppleFlow(presentationAnchor: window) { result in
+            DispatchQueue.main.async {
+                isLoading = false
+                
+                switch result {
+                case .success(let userID):
+                    print("✅ Connexion réussie avec l'identifiant: \(userID)")
+                    // La notification .userDidSignIn est envoyée automatiquement par AppleSignInService
+                    
+                case .failure(let error):
+                    print("❌ Erreur de connexion: \(error.localizedDescription)")
+                    alertMessage = "La connexion a échoué. Veuillez réessayer."
+                    showAlert = true
+                }
+            }
         }
     }
 }
 
 #Preview {
     AppleSignInButtonView()
+        .environmentObject(AppleSignInService.shared)
+        .padding()
 }
 
 /*

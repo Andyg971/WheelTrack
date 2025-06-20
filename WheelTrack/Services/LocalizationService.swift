@@ -331,6 +331,16 @@ struct CommonTranslations {
     static let tutorialSkip = ("Passer", "Skip")
     static let tutorialStart = ("Commencer", "Get Started")
     static let tutorialPrevious = ("Précédent", "Previous")
+    
+    // Nouveau système de tutoriel simplifié (3 slides)
+    static let tutorialPage1Title = ("Gestion de véhicules", "Vehicle Management")
+    static let tutorialPage1Description = ("Ajoutez vos véhicules, suivez leur kilométrage et organisez votre garage personnel.", "Add your vehicles, track mileage and organize your personal garage.")
+    
+    static let tutorialPage2Title = ("Suivi financier", "Financial Tracking")
+    static let tutorialPage2Description = ("Enregistrez vos dépenses automobile et visualisez vos données avec des graphiques détaillés.", "Record your automotive expenses and visualize your data with detailed charts.")
+    
+    static let tutorialPage3Title = ("Synchronisation iCloud", "iCloud Sync")
+    static let tutorialPage3Description = ("Vos données sont automatiquement sauvegardées et synchronisées sur tous vos appareils Apple.", "Your data is automatically backed up and synced across all your Apple devices.")
 }
 
 /// Helper pour accéder facilement aux traductions

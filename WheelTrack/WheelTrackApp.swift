@@ -10,15 +10,16 @@ import SwiftUI
 @main
 struct WheelTrackApp: App {
     @StateObject private var localizationService = LocalizationService.shared
-    @StateObject private var tutorialService = TutorialService.shared
+    @StateObject private var appleSignInService = AppleSignInService.shared
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(localizationService)
-                .fullScreenCover(isPresented: $tutorialService.shouldShowTutorial) {
-                    TutorialView()
-                        .environmentObject(localizationService)
+                .environmentObject(appleSignInService)
+                .onAppear {
+                    // Charger l'état de connexion persisté au démarrage
+                    appleSignInService.loadUserIdentifier()
                 }
         }
     }

@@ -8,7 +8,7 @@ public struct SettingsView: View {
     @State private var showingPrivacy = false
     @State private var showingTerms = false
     @State private var showingNotifications = false
-    @StateObject private var tutorialService = TutorialService.shared
+    @EnvironmentObject private var appleSignInService: AppleSignInService
     
     public init() {}
 
@@ -141,8 +141,8 @@ public struct SettingsView: View {
                     .accessibilityLabel(localText("privacy_policy"))
                     .accessibilityHint("Informations sur la protection de vos données personnelles")
                     
-                    // Tutoriel
-                    Button(action: { tutorialService.startTutorial() }) {
+                    // Réinitialiser l'onboarding
+                    Button(action: { resetOnboarding() }) {
                         HStack {
                             Image(systemName: "questionmark.circle")
                                 .foregroundColor(.purple)
@@ -162,6 +162,24 @@ public struct SettingsView: View {
                     .buttonStyle(PlainButtonStyle())
                     .accessibilityLabel(localText("tutorial"))
                     .accessibilityHint("Relancer le tutoriel d'introduction de l'application")
+                    
+                    // Déconnexion
+                    Button(action: { signOut() }) {
+                        HStack {
+                            Image(systemName: "person.crop.circle.badge.xmark")
+                                .foregroundColor(.red)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Se déconnecter")
+                                .font(.subheadline)
+                                .foregroundColor(.red)
+                            
+                            Spacer()
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Se déconnecter")
+                    .accessibilityHint("Déconnexion de votre compte Apple")
                 }
             }
             .navigationTitle("Réglages")
@@ -177,6 +195,17 @@ public struct SettingsView: View {
             }
         }
         .accessibilityIdentifier("SettingsView")
+    }
+    
+    // MARK: - Actions
+    private func resetOnboarding() {
+        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+        appleSignInService.signOut()
+    }
+    
+    private func signOut() {
+        appleSignInService.signOut()
+        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
     }
 }
 
