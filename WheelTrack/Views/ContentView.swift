@@ -737,7 +737,7 @@ struct VehicleRentalView: View {
     private var accessibleRentalStatsHeader: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("Vue d'ensemble")
+                Text(L(("Vue d'ensemble", "Overview")))
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)

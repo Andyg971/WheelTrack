@@ -57,6 +57,40 @@ public struct DashboardView: View {
         return revenue
     }
     
+    // MARK: - Analytics de location (Phase 3) - Version simplifiée
+    
+    private var currentPeriodRevenue: Double {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        return rentalService.rentalContracts
+            .filter { !$0.renterName.trimmingCharacters(in: .whitespaces).isEmpty }
+            .filter { contract in
+                switch selectedTimeRange {
+                case .month:
+                    return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .month) ||
+                           calendar.isDate(contract.endDate, equalTo: now, toGranularity: .month) ||
+                           (contract.startDate <= now && contract.endDate >= now)
+                case .year:
+                    return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .year) ||
+                           calendar.isDate(contract.endDate, equalTo: now, toGranularity: .year)
+                case .week:
+                    return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .weekOfYear) ||
+                           calendar.isDate(contract.endDate, equalTo: now, toGranularity: .weekOfYear) ||
+                           (contract.startDate <= now && contract.endDate >= now)
+                case .quarter:
+                    if let quarter = calendar.dateInterval(of: .quarter, for: now) {
+                        return quarter.contains(contract.startDate) || quarter.contains(contract.endDate) ||
+                               (contract.startDate <= quarter.start && contract.endDate >= quarter.end)
+                    }
+                    return false
+                case .all:
+                    return true
+                }
+            }
+            .reduce(0) { $0 + $1.totalPrice }
+    }
+    
     public var body: some View {
         NavigationView {
             ScrollView {
@@ -75,7 +109,8 @@ public struct DashboardView: View {
                     RentalSummaryCard(
                         activeRentals: vehiclesWithActiveRentals,
                         availableVehicles: vehiclesWithPrefilledContracts,
-                        totalRevenue: totalRentalRevenue
+                        currentPeriodRevenue: currentPeriodRevenue,
+                        timeRange: selectedTimeRange
                     )
                     
                     // Sélecteur de période moderne
@@ -197,11 +232,11 @@ struct TimeRangePicker: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                                            ForEach(TimeRange.allCases) { range in
-                            TimeRangeButton(
-                                title: range.localizedName(language: localizationService.currentLanguage),
-                                isSelected: selectedTimeRange == range
-                            ) {
+                    ForEach(TimeRange.allCases) { range in
+                        TimeRangeButton(
+                            title: range.localizedName(language: localizationService.currentLanguage),
+                            isSelected: selectedTimeRange == range
+                        ) {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 selectedTimeRange = range
                             }
@@ -321,8 +356,13 @@ struct ExpenseSummaryCard: View {
 struct RentalSummaryCard: View {
     let activeRentals: Int
     let availableVehicles: Int
-    let totalRevenue: Double
+    let currentPeriodRevenue: Double
+    let timeRange: TimeRange
     @EnvironmentObject var localizationService: LocalizationService
+    
+    private var hasRentals: Bool {
+        currentPeriodRevenue > 0 || activeRentals > 0
+    }
     
     var body: some View {
         HStack {
@@ -350,23 +390,33 @@ struct RentalSummaryCard: View {
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     
-                    // Info contextuelle simple et claire
-                    Text(activeRentals > 0 ? "\(activeRentals) \(activeRentals > 1 ? L(CommonTranslations.actives) : L(CommonTranslations.active))" : L(CommonTranslations.noActiveRental))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // Info simple et claire
+                    if activeRentals > 0 {
+                        Text(L(("\(activeRentals) véhicule\(activeRentals > 1 ? "s" : "") en location", "\(activeRentals) vehicle\(activeRentals > 1 ? "s" : "") rented")))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else if availableVehicles > 0 {
+                        Text(L(("\(availableVehicles) véhicule\(availableVehicles > 1 ? "s" : "") disponible\(availableVehicles > 1 ? "s" : "")", "\(availableVehicles) vehicle\(availableVehicles > 1 ? "s" : "") available")))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text(L(CommonTranslations.noActiveRental))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             
             Spacer()
             
-            // Focus sur la métrique financière principale
+            // Focus sur les revenus de la période
             VStack(alignment: .trailing, spacing: 4) {
-                Text(String(format: "%.0f €", totalRevenue))
+                Text(String(format: "%.0f €", currentPeriodRevenue))
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(totalRevenue > 0 ? .green : .secondary)
+                    .foregroundColor(currentPeriodRevenue > 0 ? .green : .secondary)
                 
-                Text(L(CommonTranslations.revenue))
+                Text(timeRange.localizedName(language: localizationService.currentLanguage))
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(.secondary)

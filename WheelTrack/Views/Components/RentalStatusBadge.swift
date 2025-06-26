@@ -24,7 +24,7 @@ struct RentalStatusBadge: View {
     var body: some View {
         if !prefilledContracts.isEmpty {
             // ✅ Badge orange pour contrats pré-remplis (vérifié en premier)
-            Text("Prêt")
+            Text(L(("Prêt", "Ready")))
                 .font(.caption2)
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
@@ -33,7 +33,7 @@ struct RentalStatusBadge: View {
                 .background(Color.orange)
                 .clipShape(Capsule())
         } else if !activeContracts.isEmpty {
-            Text("En location")
+            Text(L(("En location", "Rented")))
                 .font(.caption2)
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
@@ -42,7 +42,7 @@ struct RentalStatusBadge: View {
                 .background(Color.green)
                 .clipShape(Capsule())
         } else if !upcomingContracts.isEmpty {
-            Text("À venir")
+            Text(L(("À venir", "Upcoming")))
                 .font(.caption2)
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
@@ -51,7 +51,7 @@ struct RentalStatusBadge: View {
                 .background(Color.blue)
                 .clipShape(Capsule())
         } else {
-            Text("Disponible")
+            Text(L(CommonTranslations.available))
                 .font(.caption2)
                 .fontWeight(.medium)
                 .foregroundColor(.secondary)

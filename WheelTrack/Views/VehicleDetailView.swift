@@ -656,7 +656,7 @@ struct RentalContractCard: View {
     
     private var statusText: String {
         if isPrefilledContract {
-            return "À compléter"
+            return L(("À compléter", "To complete"))
         }
         return contract.getStatus()
     }
@@ -673,7 +673,7 @@ struct RentalContractCard: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         if isPrefilledContract {
-                            Text("Contrat à compléter")
+                            Text(L(("Contrat à compléter", "Contract to complete")))
                                 .font(.headline)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.orange)
@@ -700,7 +700,7 @@ struct RentalContractCard: View {
                         
                         if isPrefilledContract {
                             HStack(spacing: 8) {
-                                Text("Prêt")
+                                Text(L(("Prêt", "Ready")))
                                     .font(.caption)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.white)
@@ -751,7 +751,7 @@ struct RentalContractCard: View {
                         Spacer()
                         
                         if isPrefilledContract {
-                            Text("À compléter")
+                            Text(L(("À compléter", "To complete")))
                                 .font(.caption)
                                 .fontWeight(.medium)
                                 .foregroundColor(.blue)

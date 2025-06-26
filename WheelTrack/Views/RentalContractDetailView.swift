@@ -34,7 +34,7 @@ struct RentalContractDetailView: View {
     
     private var statusText: String {
         if isPrefilledContract {
-            return "À compléter"
+            return L(("À compléter", "To complete"))
         }
         return contract.getStatus()
     }
@@ -86,7 +86,7 @@ struct RentalContractDetailView: View {
                     .padding(.vertical, 16)
                 }
             }
-            .navigationTitle(isPrefilledContract ? "Contrat à compléter" : "Détails du contrat")
+            .navigationTitle(isPrefilledContract ? L(("Contrat à compléter", "Contract to complete")) : L(("Détails du contrat", "Contract details")))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -95,19 +95,19 @@ struct RentalContractDetailView: View {
                             Button {
                                 showingCompleteContractView = true
                             } label: {
-                                Label("Compléter le contrat", systemImage: "person.badge.plus")
+                                Label(L(("Compléter le contrat", "Complete contract")), systemImage: "person.badge.plus")
                             }
                         } else {
                             Button {
                                 showingEditView = true
                             } label: {
-                                Label("Modifier", systemImage: "pencil")
+                                Label(L(("Modifier", "Edit")), systemImage: "pencil")
                             }
                             
                             Button {
                                 generatePDF()
                             } label: {
-                                Label("Générer PDF", systemImage: "doc.fill")
+                                Label(L(("Générer PDF", "Generate PDF")), systemImage: "doc.fill")
                             }
                         }
                         
@@ -116,7 +116,7 @@ struct RentalContractDetailView: View {
                         Button(role: .destructive) {
                             showingDeleteAlert = true
                         } label: {
-                            Label("Supprimer", systemImage: "trash")
+                            Label(L(("Supprimer", "Delete")), systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -124,13 +124,13 @@ struct RentalContractDetailView: View {
                     }
                 }
             }
-            .alert("Supprimer le contrat", isPresented: $showingDeleteAlert) {
-                Button("Supprimer", role: .destructive) {
+            .alert(L(("Supprimer le contrat", "Delete contract")), isPresented: $showingDeleteAlert) {
+                Button(L(("Supprimer", "Delete")), role: .destructive) {
                     deleteContract()
                 }
-                Button("Annuler", role: .cancel) { }
+                Button(L(CommonTranslations.cancel), role: .cancel) { }
             } message: {
-                Text("Êtes-vous sûr de vouloir supprimer ce contrat de location ? Cette action est irréversible.")
+                Text(L(("Êtes-vous sûr de vouloir supprimer ce contrat de location ? Cette action est irréversible.", "Are you sure you want to delete this rental contract? This action is irreversible.")))
             }
             .sheet(isPresented: $showingEditView) {
                 EditRentalContractView(contract: contract, vehicle: vehicle)
@@ -151,7 +151,7 @@ struct RentalContractDetailView: View {
                     .foregroundColor(statusColor)
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(isPrefilledContract ? "Contrat à compléter" : "Contrat de location")
+                    Text(isPrefilledContract ? L(("Contrat à compléter", "Contract to complete")) : L(("Contrat de location", "Rental Contract")))
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
@@ -184,12 +184,12 @@ struct RentalContractDetailView: View {
                     .font(.title3)
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Contrat prêt à être complété")
+                    Text(L(("Contrat prêt à être complété", "Contract ready to be completed")))
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
                     
-                    Text("Ce contrat a été créé automatiquement avec les paramètres de location du véhicule. Ajoutez un locataire pour l'activer.")
+                    Text(L(("Ce contrat a été créé automatiquement avec les paramètres de location du véhicule. Ajoutez un locataire pour l'activer.", "This contract was automatically created with the vehicle's rental parameters. Add a renter to activate it.")))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -203,7 +203,7 @@ struct RentalContractDetailView: View {
             } label: {
                 HStack {
                     Image(systemName: "person.badge.plus")
-                    Text("Ajouter un locataire")
+                    Text(L(("Ajouter un locataire", "Add a renter")))
                 }
                 .font(.headline)
                 .foregroundColor(.white)
@@ -238,7 +238,7 @@ struct RentalContractDetailView: View {
                     .foregroundColor(.blue)
                     .frame(width: 24, height: 24)
                 
-                Text("Locataire")
+                Text(L(("Locataire", "Renter")))
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -247,8 +247,8 @@ struct RentalContractDetailView: View {
             }
             
             VStack(alignment: .leading, spacing: 12) {
-                InfoRow(label: "Nom", value: contract.renterName)
-                InfoRow(label: "ID du contrat", value: contract.id.uuidString.prefix(8).uppercased())
+                InfoRow(label: L(("Nom", "Name")), value: contract.renterName)
+                InfoRow(label: L(("ID du contrat", "Contract ID")), value: contract.id.uuidString.prefix(8).uppercased())
             }
         }
         .padding(16)
@@ -267,7 +267,7 @@ struct RentalContractDetailView: View {
                     .foregroundColor(.green)
                     .frame(width: 24, height: 24)
                 
-                Text("Véhicule")
+                Text(L(("Véhicule", "Vehicle")))
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -276,20 +276,20 @@ struct RentalContractDetailView: View {
             }
             
             VStack(alignment: .leading, spacing: 12) {
-                InfoRow(label: "Modèle", value: "\(vehicle.brand) \(vehicle.model)")
-                InfoRow(label: "Immatriculation", value: vehicle.licensePlate)
-                InfoRow(label: appLanguage == "en" ? "Year" : "Année", value: "\(vehicle.year)")
-                InfoRow(label: "Couleur", value: vehicle.color)
+                InfoRow(label: L(("Modèle", "Model")), value: "\(vehicle.brand) \(vehicle.model)")
+                InfoRow(label: L(("Immatriculation", "License Plate")), value: vehicle.licensePlate)
+                InfoRow(label: L(("Année", "Year")), value: "\(vehicle.year)")
+                InfoRow(label: L(("Couleur", "Color")), value: vehicle.color)
                 
                 // Afficher les informations de location si disponibles
                 if let depositAmount = vehicle.depositAmount {
-                    InfoRow(label: "Caution", value: String(format: "%.0f €", depositAmount))
+                    InfoRow(label: L(("Caution", "Deposit")), value: String(format: "%.0f €", depositAmount))
                 }
                 if let minDays = vehicle.minimumRentalDays {
-                    InfoRow(label: "Durée minimum", value: "\(minDays) jour\(minDays > 1 ? "s" : "")")
+                    InfoRow(label: L(("Durée minimum", "Minimum duration")), value: "\(minDays) \(L((minDays > 1 ? "jours" : "jour", minDays > 1 ? "days" : "day")))")
                 }
                 if let maxDays = vehicle.maximumRentalDays {
-                    InfoRow(label: "Durée maximum", value: "\(maxDays) jour\(maxDays > 1 ? "s" : "")")
+                    InfoRow(label: L(("Durée maximum", "Maximum duration")), value: "\(maxDays) \(L((maxDays > 1 ? "jours" : "jour", maxDays > 1 ? "days" : "day")))")
                 }
             }
         }
@@ -309,7 +309,7 @@ struct RentalContractDetailView: View {
                     .foregroundColor(.orange)
                     .frame(width: 24, height: 24)
                 
-                Text("Période")
+                Text(L(("Période", "Period")))
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -318,9 +318,9 @@ struct RentalContractDetailView: View {
             }
             
             VStack(alignment: .leading, spacing: 12) {
-                InfoRow(label: "Date de début", value: formattedStartDate)
-                InfoRow(label: "Date de fin", value: formattedEndDate)
-                InfoRow(label: "Durée", value: "\(contract.numberOfDays) jour\(contract.numberOfDays > 1 ? "s" : "")")
+                InfoRow(label: L(("Date de début", "Start date")), value: formattedStartDate)
+                InfoRow(label: L(("Date de fin", "End date")), value: formattedEndDate)
+                InfoRow(label: L(("Durée", "Duration")), value: "\(contract.numberOfDays) \(L((contract.numberOfDays > 1 ? "jours" : "jour", contract.numberOfDays > 1 ? "days" : "day")))")
             }
         }
         .padding(16)
@@ -339,7 +339,7 @@ struct RentalContractDetailView: View {
                     .foregroundColor(.green)
                     .frame(width: 24, height: 24)
                 
-                Text("Tarification")
+                Text(L(("Tarification", "Pricing")))
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -421,7 +421,7 @@ struct RentalContractDetailView: View {
                     } label: {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
-                            Text("Finaliser la location")
+                            Text(L(("Finaliser la location", "Finalize rental")))
                         }
                         .font(.headline)
                         .foregroundColor(.white)
@@ -446,7 +446,7 @@ struct RentalContractDetailView: View {
                     } label: {
                         HStack {
                             Image(systemName: "doc.fill")
-                            Text("Générer PDF")
+                            Text(L(("Générer PDF", "Generate PDF")))
                         }
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -462,7 +462,7 @@ struct RentalContractDetailView: View {
                     } label: {
                         HStack {
                             Image(systemName: "square.and.arrow.up")
-                            Text("Partager")
+                            Text(L(("Partager", "Share")))
                         }
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -507,7 +507,7 @@ struct RentalContractDetailView: View {
         return pdfRenderer.pdfData { context in
             context.beginPage()
             
-            let title = "CONTRAT DE LOCATION"
+            let title = L(("CONTRAT DE LOCATION", "RENTAL CONTRACT")).uppercased()
             let titleAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.boldSystemFont(ofSize: 24),
                 .foregroundColor: UIColor.black
@@ -528,52 +528,52 @@ struct RentalContractDetailView: View {
             let lineHeight: CGFloat = 20
             
             // Informations du véhicule
-            "VÉHICULE".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
+            L(("VÉHICULE", "VEHICLE")).uppercased().draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
             yPosition += lineHeight + 10
             
-            "Marque et modèle: \(vehicle.brand) \(vehicle.model)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Marque et modèle", "Brand and model"))): \(vehicle.brand) \(vehicle.model)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "Immatriculation: \(vehicle.licensePlate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Immatriculation", "License Plate"))): \(vehicle.licensePlate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "Année: \(vehicle.year)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Année", "Year"))): \(vehicle.year)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "Couleur: \(vehicle.color)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Couleur", "Color"))): \(vehicle.color)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight + 20
             
             // Informations du locataire
-            "LOCATAIRE".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
+            L(("LOCATAIRE", "RENTER")).uppercased().draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
             yPosition += lineHeight + 10
             
-            "Nom: \(contract.renterName)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Nom", "Name"))): \(contract.renterName)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight + 20
             
             // Période et tarification
-            "PÉRIODE DE LOCATION".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
+            L(("PÉRIODE DE LOCATION", "RENTAL PERIOD")).uppercased().draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
             yPosition += lineHeight + 10
             
-            "Date de début: \(formattedStartDate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Date de début", "Start date"))): \(formattedStartDate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "Date de fin: \(formattedEndDate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Date de fin", "End date"))): \(formattedEndDate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "Durée: \(contract.numberOfDays) jour\(contract.numberOfDays > 1 ? "s" : "")".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Durée", "Duration"))): \(contract.numberOfDays) \(L((contract.numberOfDays > 1 ? "jours" : "jour", contract.numberOfDays > 1 ? "days" : "day")))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "Prix par jour: \(String(format: "%.2f €", contract.pricePerDay))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Prix par jour", "Price per day"))): \(String(format: "%.2f €", contract.pricePerDay))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "TOTAL: \(String(format: "%.2f €", contract.totalPrice))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
+            "\(L(("TOTAL", "TOTAL"))): \(String(format: "%.2f €", contract.totalPrice))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
             yPosition += lineHeight + 20
             
             // État des lieux
-            "ÉTAT DES LIEUX".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
+            L(("ÉTAT DES LIEUX", "CONDITION REPORT")).uppercased().draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
             yPosition += lineHeight + 10
             
-            let conditionText = contract.conditionReport.isEmpty ? "Non spécifié" : contract.conditionReport
+            let conditionText = contract.conditionReport.isEmpty ? L(("Non spécifié", "Not specified")) : contract.conditionReport
             let rect = CGRect(x: 50, y: yPosition, width: 495, height: 200)
             conditionText.draw(in: rect, withAttributes: normalAttributes)
         }
@@ -602,12 +602,12 @@ struct RentalContractDetailView: View {
         guard !isPrefilledContract else { return }
         
         let text = """
-        CONTRAT DE LOCATION
+        \(L(("CONTRAT DE LOCATION", "RENTAL CONTRACT")))
         
-        Véhicule: \(vehicle.brand) \(vehicle.model) (\(vehicle.licensePlate))
-        Locataire: \(contract.renterName)
-        Période: \(formattedStartDate) - \(formattedEndDate)
-        Total: \(String(format: "%.2f €", contract.totalPrice))
+        \(L(("Véhicule", "Vehicle"))): \(vehicle.brand) \(vehicle.model) (\(vehicle.licensePlate))
+        \(L(("Locataire", "Renter"))): \(contract.renterName)
+        \(L(("Période", "Period"))): \(formattedStartDate) - \(formattedEndDate)
+        \(L(("Total", "Total"))): \(String(format: "%.2f €", contract.totalPrice))
         """
         
         let activityViewController = UIActivityViewController(activityItems: [text], applicationActivities: nil)
@@ -684,11 +684,11 @@ struct CompletePrefilledContractViewLocal: View {
                                 .font(.title2)
                             
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Compléter le contrat")
+                                Text(L(("Compléter le contrat", "Complete contract")))
                                     .font(.headline)
                                     .fontWeight(.semibold)
                                 
-                                Text("Ajoutez les informations du locataire pour activer ce contrat prérempli")
+                                Text(L(("Ajoutez les informations du locataire pour activer ce contrat prérempli", "Add renter information to activate this prefilled contract")))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -700,18 +700,18 @@ struct CompletePrefilledContractViewLocal: View {
                         
                         // Résumé du contrat prérempli
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Détails du contrat")
+                            Text(L(("Détails du contrat", "Contract details")))
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                                 .foregroundColor(.primary)
                             
-                            InfoSummaryRowLocal(icon: "car.fill", label: "Véhicule", value: "\(vehicle.brand) \(vehicle.model)")
-                            InfoSummaryRowLocal(icon: "calendar", label: "Période", value: formattedDateRange)
-                            InfoSummaryRowLocal(icon: "eurosign.circle", label: "Tarif", value: "\(String(format: "%.0f", contract.pricePerDay))€/jour")
-                            InfoSummaryRowLocal(icon: "creditcard", label: "Total", value: "\(String(format: "%.0f", contract.totalPrice))€")
+                            InfoSummaryRowLocal(icon: "car.fill", label: L(("Véhicule", "Vehicle")), value: "\(vehicle.brand) \(vehicle.model)")
+                            InfoSummaryRowLocal(icon: "calendar", label: L(("Période", "Period")), value: formattedDateRange)
+                            InfoSummaryRowLocal(icon: "eurosign.circle", label: L(("Tarif", "Rate")), value: "\(String(format: "%.0f", contract.pricePerDay))€/jour")
+                            InfoSummaryRowLocal(icon: "creditcard", label: L(("Total", "Total")), value: "\(String(format: "%.0f", contract.totalPrice))€")
                             
                             if let depositAmount = vehicle.depositAmount {
-                                InfoSummaryRowLocal(icon: "banknote", label: "Caution", value: "\(String(format: "%.0f", depositAmount))€")
+                                InfoSummaryRowLocal(icon: "banknote", label: L(("Caution", "Deposit")), value: "\(String(format: "%.0f", depositAmount))€")
                             }
                         }
                         .padding(16)
@@ -719,25 +719,25 @@ struct CompletePrefilledContractViewLocal: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 } header: {
-                    Text("Contrat prérempli")
+                    Text(L(("Contrat prérempli", "Prefilled contract")))
                 }
                 
                 Section {
-                    TextField("Nom complet du locataire", text: $renterName)
+                    TextField(L(("Nom complet du locataire", "Renter full name")), text: $renterName)
                         .textContentType(.name)
                     
-                    TextField("Téléphone (optionnel)", text: $renterPhone)
+                    TextField(L(("Téléphone (optionnel)", "Phone (optional)")), text: $renterPhone)
                         .textContentType(.telephoneNumber)
                         .keyboardType(.phonePad)
                     
-                    TextField("Email (optionnel)", text: $renterEmail)
+                    TextField(L(("Email (optionnel)", "Email (optional)")), text: $renterEmail)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                 } header: {
-                    Text("Informations du locataire")
+                    Text(L(("Informations du locataire", "Renter information")))
                 } footer: {
-                    Text("Seul le nom est obligatoire pour activer le contrat. Les autres informations peuvent être ajoutées plus tard.")
+                    Text(L(("Seul le nom est obligatoire pour activer le contrat. Les autres informations peuvent être ajoutées plus tard.", "Only the name is required to activate the contract. Other information can be added later.")))
                         .font(.caption)
                 }
                 
@@ -745,9 +745,9 @@ struct CompletePrefilledContractViewLocal: View {
                     TextEditor(text: $conditionReport)
                         .frame(minHeight: 100)
                 } header: {
-                    Text("État des lieux")
+                    Text(L(("État des lieux", "Condition report")))
                 } footer: {
-                    Text("Décrivez l'état actuel du véhicule au moment de la remise des clés.")
+                    Text(L(("Décrivez l'état actuel du véhicule au moment de la remise des clés.", "Describe the current condition of the vehicle at the time of key handover.")))
                         .font(.caption)
                 }
                 
@@ -757,29 +757,29 @@ struct CompletePrefilledContractViewLocal: View {
                             .foregroundColor(.blue)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Activation du contrat")
+                            Text(L(("Activation du contrat", "Contract activation")))
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                             
-                            Text("Une fois complété, ce contrat sera automatiquement activé et visible dans la section des contrats actifs.")
+                            Text(L(("Une fois complété, ce contrat sera automatiquement activé et visible dans la section des contrats actifs.", "Once completed, this contract will be automatically activated and visible in the active contracts section.")))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
                 }
             }
-            .navigationTitle("Compléter le contrat")
+            .navigationTitle(L(("Compléter le contrat", "Complete contract")))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Activer") {
+                    Button(L(("Activer", "Activate"))) {
                         completeContract()
                     }
                     .disabled(!isFormValid || isLoading)
                     .fontWeight(.semibold)
                 }
             }
-            .alert("Erreur de validation", isPresented: $showingValidationAlert) {
+            .alert(L(("Erreur de validation", "Validation error")), isPresented: $showingValidationAlert) {
                 Button("OK") { }
             } message: {
                 Text(validationMessage)
@@ -793,7 +793,7 @@ struct CompletePrefilledContractViewLocal: View {
                         ProgressView()
                             .scaleEffect(1.2)
                         
-                        Text("Activation du contrat...")
+                        Text(L(("Activation du contrat...", "Activating contract...")))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .padding(.top, 8)
@@ -816,7 +816,7 @@ struct CompletePrefilledContractViewLocal: View {
         
         // Mettre à jour le contrat avec les informations du locataire
         let updatedConditionReport = conditionReport.isEmpty ? 
-            "Véhicule en bon état général. État détaillé à compléter lors de la remise des clés." : 
+            L(("Véhicule en bon état général. État détaillé à compléter lors de la remise des clés.", "Vehicle in good general condition. Detailed condition to be completed upon key handover.")) : 
             conditionReport
         
         let completedContract = RentalContract(
@@ -834,7 +834,7 @@ struct CompletePrefilledContractViewLocal: View {
         // Valider le contrat
         let validation = rentalService.validateContract(completedContract)
         guard validation.isValid else {
-            showValidationAlert(message: validation.errorMessage ?? "Erreur de validation")
+            showValidationAlert(message: validation.errorMessage ?? L(("Erreur de validation", "Validation error")))
             return
         }
         

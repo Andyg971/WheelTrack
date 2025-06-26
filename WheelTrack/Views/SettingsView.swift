@@ -39,8 +39,8 @@ public struct SettingsView: View {
         case ("support", _): return "Support"
         case ("legal_info", "en"): return "Legal Information"
         case ("legal_info", _): return "Informations légales"
-        case ("copyright", "en"): return "© 2024 WheelTrack. All rights reserved."
-        case ("copyright", _): return "© 2024 WheelTrack. Tous droits réservés."
+        case ("copyright", "en"): return "© 2025 WheelTrack. All rights reserved."
+        case ("copyright", _): return "© 2025 WheelTrack. Tous droits réservés."
         default: return key
         }
     }
@@ -66,10 +66,6 @@ public struct SettingsView: View {
                                 .foregroundColor(.primary)
                             
                             Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
                         }
                     }
                     .accessibilityLabel(localText("general_settings"))
@@ -265,8 +261,8 @@ struct SimpleAboutView: View {
         case ("privacy_policy", _): return "Politique de confidentialité"
         case ("terms", "en"): return "Terms of Service"
         case ("terms", _): return "Conditions d'utilisation"
-        case ("copyright", "en"): return "© 2024 WheelTrack. All rights reserved."
-        case ("copyright", _): return "© 2024 WheelTrack. Tous droits réservés."
+        case ("copyright", "en"): return "© 2025 WheelTrack. All rights reserved."
+        case ("copyright", _): return "© 2025 WheelTrack. Tous droits réservés."
         default: return key
         }
     }
@@ -424,8 +420,8 @@ struct SimplePrivacyView: View {
         case ("contact", _): return "Contact"
         case ("contact_text", "en"): return "For any questions: support@wheeltrack.app"
         case ("contact_text", _): return "Pour toute question: support@wheeltrack.app"
-        case ("last_update", "en"): return "Last updated: January 2024"
-        case ("last_update", _): return "Dernière mise à jour : Janvier 2024"
+        case ("last_update", "en"): return "Last updated: January 2025"
+        case ("last_update", _): return "Dernière mise à jour : Janvier 2025"
         default: return key
         }
     }

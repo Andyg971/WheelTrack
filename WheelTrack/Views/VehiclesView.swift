@@ -658,7 +658,7 @@ struct ModernVehicleCard: View {
     @ViewBuilder
     private func rentalBadgeView() -> some View {
         if hasActiveRental {
-            Text("Loué")
+            Text(L(CommonTranslations.rented))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.white)
                 .padding(.horizontal, 10)
@@ -667,7 +667,7 @@ struct ModernVehicleCard: View {
                 .clipShape(Capsule())
         } else if hasPrefilledContract {
             // ✅ Badge orange pour contrats pré-remplis
-            Text("Prêt")
+                                    Text(L(("Prêt", "Ready")))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.white)
                 .padding(.horizontal, 10)
@@ -675,7 +675,7 @@ struct ModernVehicleCard: View {
                 .background(Color.orange)
                 .clipShape(Capsule())
         } else if vehicle.isAvailableForRent {
-            Text("Libre")
+                                    Text(L(("Libre", "Free")))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.white)
                 .padding(.horizontal, 10)
