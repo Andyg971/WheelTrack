@@ -104,8 +104,25 @@ struct AddGarageView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Enregistrer") {
-                        // Préparer le garage avec toutes les infos (y compris coordonnées)
-                        // TODO: Enregistrer dans la base ou ViewModel
+                        // Créer le garage avec toutes les informations saisies
+                        guard let lat = Double(latitude), let lon = Double(longitude) else { return }
+                        
+                        _ = Garage(
+                            id: UUID(),
+                            nom: name,
+                            adresse: address,
+                            ville: city,
+                            telephone: phone,
+                            services: Array(services),
+                            horaires: openingHours,
+                            latitude: lat,
+                            longitude: lon,
+                            isFavorite: false
+                        )
+                        
+                        // TODO: Enregistrer le garage via CloudKitGarageService
+                        // CloudKitGarageService.shared.saveGarage(garage)
+                        
                         dismiss()
                     }
                     .disabled(name.isEmpty || address.isEmpty || city.isEmpty || postalCode.isEmpty)

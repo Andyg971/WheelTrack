@@ -58,7 +58,7 @@ struct RentalListView: View {
                                     }
                                 }
                             } header: {
-                                Label("Contrats prêts à compléter", systemImage: "doc.badge.plus")
+                                Label(L(("Contrats prêts à compléter", "Contracts ready to complete")), systemImage: "doc.badge.plus")
                                     .foregroundColor(.blue)
                             }
                         }
@@ -80,7 +80,7 @@ struct RentalListView: View {
                                     }
                                 }
                             } header: {
-                                Label("Contrats actifs", systemImage: "checkmark.circle.fill")
+                                Label(L(("Contrats actifs", "Active contracts")), systemImage: "checkmark.circle.fill")
                                     .foregroundColor(.green)
                             }
                         }
@@ -102,7 +102,7 @@ struct RentalListView: View {
                                     }
                                 }
                             } header: {
-                                Label("Contrats à venir", systemImage: "clock")
+                                Label(L(("Contrats à venir", "Upcoming contracts")), systemImage: "clock")
                                     .foregroundColor(.blue)
                             }
                         }
@@ -124,7 +124,7 @@ struct RentalListView: View {
                                     }
                                 }
                             } header: {
-                                Label("Contrats terminés", systemImage: "checkmark.circle")
+                                Label(L(("Contrats terminés", "Completed contracts")), systemImage: "checkmark.circle")
                                     .foregroundColor(.gray)
                             }
                         }
@@ -132,7 +132,7 @@ struct RentalListView: View {
                     .listStyle(InsetGroupedListStyle())
                 }
             }
-            .navigationTitle("Locations")
+            .navigationTitle(L(("Locations", "Rentals")))
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingAddRental) {
                 AddRentalContractView(vehicle: vehicle)
@@ -142,17 +142,17 @@ struct RentalListView: View {
                     RentalContractDetailView(contract: contract, vehicle: vehicle)
                 }
             }
-            .alert("Supprimer le contrat", isPresented: $showingDeleteAlert) {
-                Button("Supprimer", role: .destructive) {
+            .alert(L(("Supprimer le contrat", "Delete contract")), isPresented: $showingDeleteAlert) {
+                Button(L(("Supprimer", "Delete")), role: .destructive) {
                     if let contract = contractToDelete {
                         deleteContract(contract)
                     }
                 }
-                Button("Annuler", role: .cancel) {
+                Button(L(CommonTranslations.cancel), role: .cancel) {
                     contractToDelete = nil
                 }
             } message: {
-                Text("Êtes-vous sûr de vouloir supprimer ce contrat de location ? Cette action est irréversible.")
+                Text(L(("Êtes-vous sûr de vouloir supprimer ce contrat de location ? Cette action est irréversible.", "Are you sure you want to delete this rental contract? This action is irreversible.")))
             }
         }
     }
@@ -169,12 +169,12 @@ struct RentalListView: View {
                 .foregroundColor(.blue.opacity(0.6))
             
             VStack(spacing: 8) {
-                Text("Aucun contrat de location")
+                Text(L(("Aucun contrat de location", "No rental contracts")))
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
-                Text("Ce véhicule sera automatiquement ajouté avec un contrat prérempli si vous l'activez pour la location")
+                Text(L(("Ce véhicule sera automatiquement ajouté avec un contrat prérempli si vous l'activez pour la location", "This vehicle will be automatically added with a prefilled contract if you activate it for rental")))
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -186,7 +186,7 @@ struct RentalListView: View {
             } label: {
                 HStack {
                     Image(systemName: "plus.circle.fill")
-                    Text("Créer un contrat")
+                    Text(L(("Créer un contrat", "Create a contract")))
                 }
                 .font(.headline)
                 .foregroundColor(.white)
@@ -225,7 +225,7 @@ struct PrefilledContractRow: View {
                 HStack {
                     Image(systemName: "doc.badge.plus")
                         .foregroundColor(.orange)
-                    Text("Prêt")
+                    Text(L(("Prêt", "Ready")))
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -269,7 +269,7 @@ struct PrefilledContractRow: View {
                 HStack {
                     Image(systemName: "person.badge.plus")
                         .foregroundColor(.orange)
-                    Text("Appuyez pour ajouter un locataire")
+                    Text(L(("Appuyez pour ajouter un locataire", "Tap to add a renter")))
                         .font(.caption)
                         .foregroundColor(.orange)
                         .italic()
@@ -298,13 +298,13 @@ struct RentalContractRow: View {
         
         if contract.isActive() {
             let daysLeft = calendar.dateComponents([.day], from: now, to: contract.endDate).day ?? 0
-            return "Se termine dans \(daysLeft) jour\(daysLeft > 1 ? "s" : "")"
+            return L(("Se termine dans \(daysLeft) jour\(daysLeft > 1 ? "s" : "")", "Ends in \(daysLeft) day\(daysLeft > 1 ? "s" : "")"))
         } else if contract.startDate > now {
             let daysUntil = calendar.dateComponents([.day], from: now, to: contract.startDate).day ?? 0
-            return "Commence dans \(daysUntil) jour\(daysUntil > 1 ? "s" : "")"
+            return L(("Commence dans \(daysUntil) jour\(daysUntil > 1 ? "s" : "")", "Starts in \(daysUntil) day\(daysUntil > 1 ? "s" : "")"))
         } else {
             let daysSince = calendar.dateComponents([.day], from: contract.endDate, to: now).day ?? 0
-            return "Terminé depuis \(daysSince) jour\(daysSince > 1 ? "s" : "")"
+            return L(("Terminé depuis \(daysSince) jour\(daysSince > 1 ? "s" : "")", "Ended \(daysSince) day\(daysSince > 1 ? "s" : "") ago"))
         }
     }
     

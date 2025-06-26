@@ -70,23 +70,23 @@ struct AddRentalContractView: View {
                     depositAmount = String(format: "%.0f", vehicleDeposit)
                 }
             }
-            .navigationTitle("Nouveau contrat")
+            .navigationTitle(L(("Nouveau contrat", "New contract")))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") {
+                    Button(L(CommonTranslations.cancel)) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") {
+                    Button(L(CommonTranslations.save)) {
                         saveContract()
                     }
                     .disabled(!isFormValid || isLoading)
                 }
             }
-            .alert("Validation", isPresented: $showingValidationAlert) {
+            .alert(L(CommonTranslations.validation), isPresented: $showingValidationAlert) {
                 Button("OK") { }
             } message: {
                 Text(validationMessage)
@@ -129,19 +129,19 @@ struct AddRentalContractView: View {
     }
     
     private var renterInfoSection: some View {
-        FormSection(title: "Informations du locataire", icon: "person.fill") {
-            TextField("Nom complet du locataire", text: $renterName)
+        FormSection(title: L(("Informations du locataire", "Renter information")), icon: "person.fill") {
+            TextField(L(("Nom complet du locataire", "Renter full name")), text: $renterName)
                 .textFieldStyle(ModernTextFieldStyle())
         }
     }
     
     private var datesSection: some View {
-        FormSection(title: "Période de location", icon: "calendar") {
+        FormSection(title: L(("Période de location", "Rental period")), icon: "calendar") {
             VStack(spacing: 16) {
-                DatePicker("Date de début", selection: $startDate, displayedComponents: .date)
+                DatePicker(L(("Date de début", "Start date")), selection: $startDate, displayedComponents: .date)
                     .datePickerStyle(.compact)
                 
-                DatePicker("Date de fin", selection: $endDate, displayedComponents: .date)
+                DatePicker(L(("Date de fin", "End date")), selection: $endDate, displayedComponents: .date)
                     .datePickerStyle(.compact)
                 
                 if numberOfDays > 0 {
@@ -183,7 +183,7 @@ struct AddRentalContractView: View {
                 }
                 
                 HStack {
-                    Text("Caution")
+                    Text(L(("Caution", "Deposit")))
                         .font(.subheadline)
                         .foregroundColor(.primary)
                     
@@ -229,9 +229,9 @@ struct AddRentalContractView: View {
     }
     
     private var conditionSection: some View {
-        FormSection(title: "État des lieux", icon: "doc.text.fill") {
+        FormSection(title: L(("État des lieux", "Condition report")), icon: "doc.text.fill") {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Décrivez l'état du véhicule au moment de la prise en charge")
+                Text(L(("Décrivez l'état du véhicule au moment de la prise en charge", "Describe the vehicle's condition at the time of pickup")))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
@@ -273,7 +273,7 @@ struct AddRentalContractView: View {
             rentalService.addRentalContract(contract)
             dismiss()
         } else {
-            validationMessage = validation.errorMessage ?? "Erreur inconnue"
+            validationMessage = validation.errorMessage ?? L(("Erreur inconnue", "Unknown error"))
             showingValidationAlert = true
         }
         

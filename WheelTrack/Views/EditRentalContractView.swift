@@ -239,8 +239,8 @@ struct EditRentalContractView: View {
     }
     
     private var conditionSection: some View {
-        FormSection(title: "État des lieux", icon: "doc.text") {
-            TextField("État du véhicule, dommages éventuels...", text: $conditionReport, axis: .vertical)
+        FormSection(title: L(("État des lieux", "Condition report")), icon: "doc.text") {
+            TextField(L(("État du véhicule, dommages éventuels...", "Vehicle condition, potential damages...")), text: $conditionReport, axis: .vertical)
                 .textFieldStyle(ModernTextFieldStyle())
                 .lineLimit(4, reservesSpace: true)
         }
@@ -252,12 +252,12 @@ struct EditRentalContractView: View {
         isLoading = true
         
         guard let priceValue = Double(pricePerDay) else {
-            showValidationAlert(message: "Veuillez saisir un prix valide")
+            showValidationAlert(message: L(("Veuillez saisir un prix valide", "Please enter a valid price")))
             return
         }
         
         guard startDate < endDate else {
-            showValidationAlert(message: "La date de début doit être antérieure à la date de fin")
+            showValidationAlert(message: L(("La date de début doit être antérieure à la date de fin", "Start date must be before end date")))
             return
         }
         
@@ -276,7 +276,7 @@ struct EditRentalContractView: View {
         // Valider le contrat
         let validation = rentalService.validateContract(updatedContract)
         guard validation.isValid else {
-            showValidationAlert(message: validation.errorMessage ?? "Erreur de validation")
+            showValidationAlert(message: validation.errorMessage ?? L(("Erreur de validation", "Validation error")))
             return
         }
         

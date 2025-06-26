@@ -336,8 +336,8 @@ class GaragesViewModel: ObservableObject {
                 // Extraire les informations réelles
                 let name = item.name ?? "Garage"
                 let address = formatAddress(from: item.placemark)
-                let city = item.placemark.locality ?? "Ville"
-                let phoneNumber = item.phoneNumber ?? "Non disponible"
+                            let city = item.placemark.locality ?? L(("Ville", "City"))
+            let phoneNumber = item.phoneNumber ?? L(CommonTranslations.notAvailable)
                 
                 // Générer des services réalistes basés sur le type d'établissement
                 let services = generateRealisticServices(for: name, category: searchTerm)
@@ -350,7 +350,7 @@ class GaragesViewModel: ObservableObject {
                     ville: city,
                     telephone: phoneNumber,
                     services: services,
-                    horaires: "Chargement des horaires...",
+                    horaires: L(("Chargement des horaires...", "Loading hours...")),
                     latitude: item.placemark.coordinate.latitude,
                     longitude: item.placemark.coordinate.longitude,
                     isFavorite: false
@@ -377,7 +377,7 @@ class GaragesViewModel: ObservableObject {
             components.append(streetName)
         }
         
-        return components.isEmpty ? "Adresse non disponible" : components.joined(separator: " ")
+        return components.isEmpty ? L(("Adresse non disponible", "Address not available")) : components.joined(separator: " ")
     }
     
     /// Génère des services réalistes selon le type d'établissement
@@ -543,7 +543,7 @@ class GaragesViewModel: ObservableObject {
     
     /// Groupe les jours consécutifs avec les mêmes horaires
     private func groupConsecutiveDays(_ hours: [String]) -> String {
-        if hours.isEmpty { return "Horaires non disponibles" }
+        if hours.isEmpty { return L(("Horaires non disponibles", "Hours not available")) }
         
         // Si peu d'horaires, les afficher tels quels
         if hours.count <= 3 {
@@ -609,7 +609,7 @@ class GaragesViewModel: ObservableObject {
                 let realHours = await getRealBusinessHours(name: garage.nom, location: CLLocationCoordinate2D(latitude: garage.latitude, longitude: garage.longitude))
                 
                 // Mettre à jour les horaires dans la liste
-                let updatedHours = realHours ?? "Horaires non disponibles"
+                let updatedHours = realHours ?? L(("Horaires non disponibles", "Hours not available"))
                 let updatedGarage = self.garages[garageIndex]
                 
                 // Créer un nouveau garage avec les horaires mis à jour
