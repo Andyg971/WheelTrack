@@ -19,6 +19,7 @@ struct EditMaintenanceView: View {
             Form {
                 TextField("Titre", text: $titre)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
+                .environment(\.locale, Locale(identifier: "fr_FR"))
                 TextField("Coût", text: $cout)
                     .keyboardType(.decimalPad)
                 TextField("Kilométrage", text: $kilometrage)

@@ -32,6 +32,7 @@ struct RentalStatusBadge: View {
                 .padding(.vertical, 4)
                 .background(Color.orange)
                 .clipShape(Capsule())
+                .fixedSize(horizontal: true, vertical: false)
         } else if !activeContracts.isEmpty {
             Text(L(("En location", "Rented")))
                 .font(.caption2)
@@ -41,6 +42,7 @@ struct RentalStatusBadge: View {
                 .padding(.vertical, 4)
                 .background(Color.green)
                 .clipShape(Capsule())
+                .fixedSize(horizontal: true, vertical: false)
         } else if !upcomingContracts.isEmpty {
             Text(L(("À venir", "Upcoming")))
                 .font(.caption2)
@@ -50,6 +52,7 @@ struct RentalStatusBadge: View {
                 .padding(.vertical, 4)
                 .background(Color.blue)
                 .clipShape(Capsule())
+                .fixedSize(horizontal: true, vertical: false)
         } else {
             Text(L(CommonTranslations.available))
                 .font(.caption2)
@@ -59,6 +62,7 @@ struct RentalStatusBadge: View {
                 .padding(.vertical, 4)
                 .background(Color(.systemGray5))
                 .clipShape(Capsule())
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 }

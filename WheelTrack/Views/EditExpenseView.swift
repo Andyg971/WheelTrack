@@ -40,6 +40,7 @@ public struct EditExpenseView: View {
                 TextField("Montant", text: $amount)
                     .keyboardType(.decimalPad)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
+                .environment(\.locale, Locale(identifier: "fr_FR"))
             }
             .navigationTitle("Modifier la dépense")
             .toolbar {

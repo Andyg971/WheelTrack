@@ -4,6 +4,7 @@ struct EditRentalContractView: View {
     let contract: RentalContract
     let vehicle: Vehicle
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var localizationService: LocalizationService
     private var rentalService: RentalService { RentalService.shared }
     
     // Champs du formulaire
@@ -115,7 +116,7 @@ struct EditRentalContractView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
-                    Text("\(vehicle.year) • \(vehicle.color)")
+                    Text("\(String(vehicle.year)) • \(vehicle.color)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -168,9 +169,11 @@ struct EditRentalContractView: View {
             VStack(spacing: 16) {
                 DatePicker(L(CommonTranslations.startDate), selection: $startDate, displayedComponents: .date)
                     .datePickerStyle(.compact)
+                    .environment(\.locale, Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US"))
                 
                 DatePicker(L(CommonTranslations.endDate), selection: $endDate, displayedComponents: .date)
                     .datePickerStyle(.compact)
+                    .environment(\.locale, Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US"))
                 
                 if numberOfDays > 0 {
                     HStack {

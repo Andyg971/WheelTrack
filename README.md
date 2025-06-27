@@ -24,7 +24,9 @@ WheelTrack révolutionne la gestion automobile en offrant une expérience utilis
 - **Profils détaillés** : marque, modèle, année, kilométrage, type de carburant
 - **Historique complet** d'achat, maintenance et revente
 - **Évaluation en temps réel** de la valeur marchande
-- **Photos et documents** associés à chaque véhicule
+- **Gestion complète des photos** : photo principale, galerie supplémentaire, documents numérisés
+- **Compression intelligente** des images avec optimisation automatique
+- **Placeholders dynamiques** basés sur la couleur et le type de véhicule
 - **Statuts dynamiques** : actif, en maintenance, en location, vendu
 
 ### 💰 **Suivi des Dépenses**
@@ -62,6 +64,16 @@ WheelTrack révolutionne la gestion automobile en offrant une expérience utilis
 - **Partage familial** avec contrôle d'accès granulaire
 - **Mode hors ligne** avec synchronisation différée
 
+### 📸 **Gestion Avancée des Photos**
+- **3 types d'images** : photo principale, photos supplémentaires, documents
+- **Sélection multiple** depuis la galerie photos
+- **Compression automatique** (800KB pour principale, 500KB pour autres)
+- **Sauvegarde locale sécurisée** dans le dossier Documents
+- **Chargement optimisé** avec mise en cache intelligente
+- **Placeholders intelligents** générés selon la couleur et type du véhicule
+- **Interface multilingue** (français/anglais) pour tous les éléments
+- **Suppression sélective** avec confirmation utilisateur
+
 ### 🔐 **Sécurité & Authentification**
 - **Apple Sign In** pour une connexion sécurisée et rapide
 - **Chiffrement end-to-end** de toutes les données sensibles
@@ -96,6 +108,8 @@ WheelTrack révolutionne la gestion automobile en offrant une expérience utilis
 
 ### Fonctionnalités Techniques
 - **iOS 16+** - Profite des dernières APIs Apple
+- **PhotosUI Framework** - Accès natif à la galerie photos
+- **Gestion avancée des images** - Compression, redimensionnement, optimisation
 - **Géolocalisation** - Services de localisation intégrés
 - **Notifications push** - Alertes intelligentes
 - **Partage système** - Export et partage natifs
@@ -207,6 +221,7 @@ Nous accueillons toutes les contributions ! Voici comment participer :
 - [x] Contrats de location
 - [x] Analytics et rapports
 - [x] Apple Sign In
+- [x] **Système complet de gestion des photos** (NEW 📸)
 
 ### Phase 3 - Intelligence & Automatisation 🚧
 - [ ] IA prédictive pour la maintenance

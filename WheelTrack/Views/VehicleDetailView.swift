@@ -114,21 +114,8 @@ struct VehicleDetailView: View {
     private var vehicleHeaderView: some View {
         VStack(spacing: 16) {
             HStack(spacing: 16) {
-                // Icône du véhicule
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [vehicleColor, vehicleColor.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 80, height: 80)
-                    .overlay(
-                        Image(systemName: vehicleIcon)
-                            .foregroundColor(.white)
-                            .font(.system(size: 32, weight: .semibold))
-                    )
+                // Image du véhicule
+                                        VehicleHeaderImageView(vehicle: vehicle)
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("\(vehicle.brand) \(vehicle.model)")
@@ -137,7 +124,7 @@ struct VehicleDetailView: View {
                         .foregroundColor(.primary)
                     
                     HStack(spacing: 12) {
-                        Label("\(vehicle.year)", systemImage: "calendar")
+                        Label("\(String(vehicle.year))", systemImage: "calendar")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
@@ -664,6 +651,7 @@ struct RentalContractCard: View {
     private var formattedDateRange: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: "fr_FR") // Par défaut en français
         return "\(formatter.string(from: contract.startDate)) - \(formatter.string(from: contract.endDate))"
     }
     
@@ -773,6 +761,146 @@ struct RentalContractCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+
+
+// MARK: - Vehicle Header Image View
+private struct VehicleHeaderImageView: View {
+    let vehicle: Vehicle
+    @State private var loadedImage: UIImage?
+    @State private var imageManager = VehicleDetailImageManager()
+    
+    var body: some View {
+        Group {
+            if let loadedImage = loadedImage {
+                // Affichage de l'image réelle
+                Image(uiImage: loadedImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 120, height: 90)
+                    .clipped()
+                    .cornerRadius(12)
+            } else {
+                // Placeholder avec informations du véhicule
+                VehicleDetailPlaceholder(vehicle: vehicle)
+            }
+        }
+        .onAppear {
+            loadVehicleImage()
+        }
+        .onChange(of: vehicle.mainImageURL) { _, _ in
+            loadVehicleImage()
+        }
+    }
+    
+    private func loadVehicleImage() {
+        guard let mainImageURL = vehicle.mainImageURL else {
+            loadedImage = nil
+            return
+        }
+        
+        loadedImage = imageManager.loadImage(fileName: mainImageURL)
+    }
+}
+
+// MARK: - Vehicle Detail Placeholder
+private struct VehicleDetailPlaceholder: View {
+    let vehicle: Vehicle
+    
+    private var vehicleIcon: String {
+        switch vehicle.fuelType {
+        case .electric:
+            return "bolt.car"
+        case .hybrid:
+            return "leaf.circle"
+        default:
+            return "car"
+        }
+    }
+    
+    private var gradientColors: [Color] {
+        switch vehicle.color.lowercased() {
+        case "rouge", "red":
+            return [Color.red.opacity(0.3), Color.red.opacity(0.1)]
+        case "bleu", "blue":
+            return [Color.blue.opacity(0.3), Color.blue.opacity(0.1)]
+        case "vert", "green":
+            return [Color.green.opacity(0.3), Color.green.opacity(0.1)]
+        case "noir", "black":
+            return [Color.black.opacity(0.3), Color.gray.opacity(0.1)]
+        case "blanc", "white":
+            return [Color.gray.opacity(0.2), Color.gray.opacity(0.05)]
+        case "gris", "gray", "grey":
+            return [Color.gray.opacity(0.3), Color.gray.opacity(0.1)]
+        case "jaune", "yellow":
+            return [Color.yellow.opacity(0.3), Color.yellow.opacity(0.1)]
+        case "orange":
+            return [Color.orange.opacity(0.3), Color.orange.opacity(0.1)]
+        case "violet", "purple":
+            return [Color.purple.opacity(0.3), Color.purple.opacity(0.1)]
+        default:
+            return [Color.blue.opacity(0.2), Color.blue.opacity(0.05)]
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            // Gradient de fond basé sur la couleur du véhicule
+            LinearGradient(
+                gradient: Gradient(colors: gradientColors),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            
+            VStack(spacing: 4) {
+                // Icône du véhicule
+                Image(systemName: vehicleIcon)
+                    .font(.title3)
+                    .foregroundColor(.primary.opacity(0.6))
+                
+                // Informations du véhicule
+                Text(vehicle.brand)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Text(vehicle.model)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(width: 120, height: 90)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray4), lineWidth: 0.5)
+        )
+    }
+}
+
+// MARK: - Vehicle Detail Image Manager
+private class VehicleDetailImageManager {
+    
+    // MARK: - Répertoires
+    private var documentsURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    }
+    
+    private var vehicleImagesURL: URL {
+        documentsURL.appendingPathComponent("VehicleImages")
+    }
+    
+    // MARK: - Récupération d'images
+    func loadImage(fileName: String) -> UIImage? {
+        let fileURL = vehicleImagesURL.appendingPathComponent(fileName)
+        
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+        
+        return UIImage(contentsOfFile: fileURL.path)
     }
 }
 

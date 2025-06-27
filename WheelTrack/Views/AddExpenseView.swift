@@ -43,6 +43,7 @@ struct AddExpenseView: View {
                         .accessibilityIdentifier("amountField")
                     
                     DatePicker(CommonTranslations.date.0, selection: $date, displayedComponents: .date)
+                        .environment(\.locale, Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US"))
                         .accessibilityIdentifier("datePicker")
                 }
             }
