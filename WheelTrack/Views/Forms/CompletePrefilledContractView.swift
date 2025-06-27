@@ -24,6 +24,7 @@ struct CompletePrefilledContractView: View {
     private var formattedDateRange: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: "fr_FR") // Par défaut en français
         return "\(formatter.string(from: contract.startDate)) - \(formatter.string(from: contract.endDate))"
     }
     

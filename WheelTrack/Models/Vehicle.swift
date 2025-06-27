@@ -39,6 +39,11 @@ public struct Vehicle: Codable, Identifiable {
     public var vehicleDescription: String? // Description pour les locataires
     public var privateNotes: String? // Notes privées
     
+    // Gestion des photos
+    public var mainImageURL: String? // Photo principale du véhicule
+    public var additionalImagesURLs: [String] = [] // Photos supplémentaires (extérieur, intérieur)
+    public var documentsImageURLs: [String] = [] // Documents (carte grise, assurance, etc.)
+    
     // Statut du véhicule
     public var isActive: Bool = true
     

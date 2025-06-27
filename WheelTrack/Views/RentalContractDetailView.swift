@@ -42,12 +42,14 @@ struct RentalContractDetailView: View {
     private var formattedStartDate: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .full
+        formatter.locale = Locale(identifier: appLanguage == "fr" ? "fr_FR" : "en_US")
         return formatter.string(from: contract.startDate)
     }
     
     private var formattedEndDate: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .full
+        formatter.locale = Locale(identifier: appLanguage == "fr" ? "fr_FR" : "en_US")
         return formatter.string(from: contract.endDate)
     }
     
@@ -278,7 +280,7 @@ struct RentalContractDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
                 InfoRow(label: L(("Modèle", "Model")), value: "\(vehicle.brand) \(vehicle.model)")
                 InfoRow(label: L(("Immatriculation", "License Plate")), value: vehicle.licensePlate)
-                InfoRow(label: L(("Année", "Year")), value: "\(vehicle.year)")
+                InfoRow(label: L(("Année", "Year")), value: "\(String(vehicle.year))")
                 InfoRow(label: L(("Couleur", "Color")), value: vehicle.color)
                 
                 // Afficher les informations de location si disponibles
@@ -537,7 +539,7 @@ struct RentalContractDetailView: View {
             "\(L(("Immatriculation", "License Plate"))): \(vehicle.licensePlate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "\(L(("Année", "Year"))): \(vehicle.year)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Année", "Year"))): \(String(vehicle.year))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
             "\(L(("Couleur", "Color"))): \(vehicle.color)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
@@ -670,6 +672,7 @@ struct CompletePrefilledContractViewLocal: View {
     private var formattedDateRange: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: "fr_FR") // Par défaut en français pour cette vue locale
         return "\(formatter.string(from: contract.startDate)) - \(formatter.string(from: contract.endDate))"
     }
     

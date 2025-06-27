@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct EditVehicleView: View {
     var vehicle: Vehicle
@@ -59,6 +61,7 @@ struct EditVehicleView: View {
     @State private var purchasePrice: String = ""
     @State private var purchaseMileage: String = ""
     @State private var isActive: Bool = true
+    @State private var editableVehicle: Vehicle = Vehicle(brand: "", model: "", year: 2024, licensePlate: "", mileage: 0, fuelType: .diesel, transmission: .manual, color: "", purchaseDate: Date(), purchasePrice: 0, purchaseMileage: 0)
 
     var body: some View {
         NavigationStack {
@@ -82,6 +85,7 @@ struct EditVehicleView: View {
                 }
                 TextField(EditVehicleView.localText("color", language: appLanguage), text: $color)
                 DatePicker(EditVehicleView.localText("purchase_date", language: appLanguage), selection: $purchaseDate, displayedComponents: .date)
+                .environment(\.locale, Locale(identifier: appLanguage == "fr" ? "fr_FR" : "en_US"))
                 TextField(EditVehicleView.localText("purchase_price", language: appLanguage), text: $purchasePrice)
                     .keyboardType(.decimalPad)
                 TextField(EditVehicleView.localText("purchase_mileage", language: appLanguage), text: $purchaseMileage)
@@ -94,6 +98,15 @@ struct EditVehicleView: View {
                     Text(EditVehicleView.localText("inactive_note", language: appLanguage))
                         .font(.footnote)
                         .foregroundColor(.secondary)
+                }
+                
+                // MARK: - Section Photos
+                Section {
+                    VehiclePhotoEditSection(vehicle: $editableVehicle)
+                } header: {
+                    Text(appLanguage == "en" ? "Photos & Documents" : "Photos et Documents")
+                } footer: {
+                    Text(appLanguage == "en" ? "Manage photos of your vehicle and important documents" : "Gérez les photos de votre véhicule et les documents importants")
                 }
             }
             .navigationTitle(EditVehicleView.localText("edit_vehicle", language: appLanguage))
@@ -134,6 +147,11 @@ struct EditVehicleView: View {
                         updatedVehicle.estimatedValue = vehicle.estimatedValue
                         updatedVehicle.resaleDate = vehicle.resaleDate
                         updatedVehicle.resalePrice = vehicle.resalePrice
+                        
+                        // Préserver les photos du véhicule éditable
+                        updatedVehicle.mainImageURL = editableVehicle.mainImageURL
+                        updatedVehicle.additionalImagesURLs = editableVehicle.additionalImagesURLs
+                        updatedVehicle.documentsImageURLs = editableVehicle.documentsImageURLs
                         onSave(updatedVehicle)
                         dismiss()
                     }
@@ -156,8 +174,291 @@ struct EditVehicleView: View {
                 purchasePrice = String(vehicle.purchasePrice)
                 purchaseMileage = String(vehicle.purchaseMileage)
                 isActive = vehicle.isActive
+                
+                // Initialiser editableVehicle avec le véhicule actuel
+                editableVehicle = vehicle
             }
         }
+    }
+}
+
+// MARK: - Vehicle Photo Edit Section (Version pour édition)
+struct VehiclePhotoEditSection: View {
+    @Binding var vehicle: Vehicle
+    @State private var imageManager = VehicleImageManager()
+    @State private var showingPhotoPicker = false
+    @State private var selectedImages: [UIImage] = []
+    @State private var photoPickerType: PhotoPickerType = .main
+    @AppStorage("app_language") private var appLanguage = "fr"
+    
+    // États pour l'affichage
+    @State private var mainImage: UIImage?
+    @State private var additionalImages: [UIImage] = []
+    @State private var documentImages: [UIImage] = []
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // MARK: - Photo principale
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label(appLanguage == "en" ? "Main Photo" : "Photo principale", systemImage: "camera")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        photoPickerType = .main
+                        showingPhotoPicker = true
+                    }) {
+                        Image(systemName: mainImage == nil ? "plus.circle.fill" : "pencil.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                // Affichage de la photo principale
+                if let mainImage = mainImage {
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: mainImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 200)
+                            .clipped()
+                            .cornerRadius(12)
+                        
+                        Button(action: deleteMainImage) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.red)
+                                .background(Color.white, in: Circle())
+                                .font(.title2)
+                        }
+                        .padding(8)
+                    }
+                } else {
+                    // Placeholder pour photo principale
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray5))
+                        .frame(height: 200)
+                        .overlay(
+                            VStack {
+                                Image(systemName: "camera.fill")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.gray)
+                                Text(appLanguage == "en" ? "Add main photo" : "Ajouter une photo principale")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        )
+                        .onTapGesture {
+                            photoPickerType = .main
+                            showingPhotoPicker = true
+                        }
+                }
+            }
+            
+            // MARK: - Photos supplémentaires
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label(appLanguage == "en" ? "Additional Photos" : "Photos supplémentaires", systemImage: "photo.on.rectangle")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        photoPickerType = .additional
+                        showingPhotoPicker = true
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                if !additionalImages.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(Array(additionalImages.enumerated()), id: \.offset) { index, image in
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 120, height: 90)
+                                        .clipped()
+                                        .cornerRadius(8)
+                                    
+                                    Button(action: { deleteAdditionalImage(at: index) }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.red)
+                                            .background(Color.white, in: Circle())
+                                            .font(.caption)
+                                    }
+                                    .padding(4)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                } else {
+                    Text(appLanguage == "en" ? "No additional photos" : "Aucune photo supplémentaire")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding()
+                        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            
+            // MARK: - Documents
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label(appLanguage == "en" ? "Documents" : "Documents", systemImage: "doc.fill")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        photoPickerType = .documents
+                        showingPhotoPicker = true
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                if !documentImages.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(Array(documentImages.enumerated()), id: \.offset) { index, image in
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 120, height: 90)
+                                        .clipped()
+                                        .cornerRadius(8)
+                                    
+                                    Button(action: { deleteDocumentImage(at: index) }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.red)
+                                            .background(Color.white, in: Circle())
+                                            .font(.caption)
+                                    }
+                                    .padding(4)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                } else {
+                    Text(appLanguage == "en" ? "No documents" : "Aucun document")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding()
+                        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+        }
+        .onAppear {
+            loadExistingImages()
+            imageManager.createDirectoriesIfNeeded()
+        }
+        .sheet(isPresented: $showingPhotoPicker) {
+            PhotoPickerWrapper(
+                selectedImages: $selectedImages,
+                allowsMultipleSelection: photoPickerType != .main,
+                maxSelectionCount: photoPickerType == .main ? 1 : 5
+            )
+        }
+        .onChange(of: selectedImages) { _, newImages in
+            handleSelectedImages(newImages)
+        }
+    }
+    
+    // MARK: - Fonctions de gestion des images
+    private func loadExistingImages() {
+        if let mainImageURL = vehicle.mainImageURL {
+            mainImage = imageManager.loadImage(fileName: mainImageURL)
+        }
+        
+        additionalImages = vehicle.additionalImagesURLs.compactMap { fileName in
+            imageManager.loadImage(fileName: fileName)
+        }
+        
+        documentImages = vehicle.documentsImageURLs.compactMap { fileName in
+            imageManager.loadImage(fileName: fileName)
+        }
+    }
+    
+    private func handleSelectedImages(_ images: [UIImage]) {
+        guard !images.isEmpty else { return }
+        
+        switch photoPickerType {
+        case .main:
+            if let image = images.first {
+                mainImage = imageManager.compressImage(image, maxSizeKB: 800)
+                // Sauvegarder et mettre à jour le véhicule
+                if let fileName = imageManager.saveImage(image) {
+                    vehicle.mainImageURL = fileName
+                }
+            }
+            
+        case .additional:
+            for image in images {
+                if let compressedImage = imageManager.compressImage(image, maxSizeKB: 500) {
+                    additionalImages.append(compressedImage)
+                    // Sauvegarder et mettre à jour le véhicule
+                    if let fileName = imageManager.saveImage(compressedImage) {
+                        vehicle.additionalImagesURLs.append(fileName)
+                    }
+                }
+            }
+            
+        case .documents:
+            for image in images {
+                if let compressedImage = imageManager.compressImage(image, maxSizeKB: 500) {
+                    documentImages.append(compressedImage)
+                    // Sauvegarder et mettre à jour le véhicule
+                    if let fileName = imageManager.saveImage(compressedImage) {
+                        vehicle.documentsImageURLs.append(fileName)
+                    }
+                }
+            }
+        }
+        
+        selectedImages = []
+    }
+    
+    private func deleteMainImage() {
+        if let imageURL = vehicle.mainImageURL {
+            let _ = imageManager.deleteImage(fileName: imageURL)
+        }
+        mainImage = nil
+        vehicle.mainImageURL = nil
+    }
+    
+    private func deleteAdditionalImage(at index: Int) {
+        guard index < vehicle.additionalImagesURLs.count else { return }
+        
+        let fileName = vehicle.additionalImagesURLs[index]
+        let _ = imageManager.deleteImage(fileName: fileName)
+        
+        additionalImages.remove(at: index)
+        vehicle.additionalImagesURLs.remove(at: index)
+    }
+    
+    private func deleteDocumentImage(at index: Int) {
+        guard index < vehicle.documentsImageURLs.count else { return }
+        
+        let fileName = vehicle.documentsImageURLs[index]
+        let _ = imageManager.deleteImage(fileName: fileName)
+        
+        documentImages.remove(at: index)
+        vehicle.documentsImageURLs.remove(at: index)
     }
 }
 

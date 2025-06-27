@@ -49,6 +49,7 @@ struct AddMaintenanceView: View {
                 Section(AddMaintenanceView.localText("general_info", language: appLanguage)) {
                     TextField(AddMaintenanceView.localText("title", language: appLanguage), text: $titre)
                     DatePicker(AddMaintenanceView.localText("date", language: appLanguage), selection: $date, displayedComponents: .date)
+                .environment(\.locale, Locale(identifier: appLanguage == "fr" ? "fr_FR" : "en_US"))
                     TextField(AddMaintenanceView.localText("cost", language: appLanguage), text: $cout)
                         .keyboardType(.decimalPad)
                     TextField(AddMaintenanceView.localText("mileage", language: appLanguage), text: $kilometrage)

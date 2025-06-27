@@ -665,6 +665,7 @@ struct ModernVehicleCard: View {
                 .padding(.vertical, 4)
                 .background(Color.green)
                 .clipShape(Capsule())
+                .fixedSize(horizontal: true, vertical: false)
         } else if hasPrefilledContract {
             // ✅ Badge orange pour contrats pré-remplis
                                     Text(L(("Prêt", "Ready")))
@@ -674,6 +675,7 @@ struct ModernVehicleCard: View {
                 .padding(.vertical, 4)
                 .background(Color.orange)
                 .clipShape(Capsule())
+                .fixedSize(horizontal: true, vertical: false)
         } else if vehicle.isAvailableForRent {
                                     Text(L(("Libre", "Free")))
                 .font(.system(size: 12, weight: .medium))
@@ -682,26 +684,14 @@ struct ModernVehicleCard: View {
                 .padding(.vertical, 4)
                 .background(Color.blue)
                 .clipShape(Capsule())
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
     
         var body: some View {
         HStack(spacing: 16) {
-            // Icône du véhicule
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [vehicleColor, vehicleColor.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Image(systemName: vehicleIcon)
-                        .foregroundColor(.white)
-                        .font(.system(size: 20, weight: .semibold))
-                )
+            // Image du véhicule avec placeholder intelligent
+            VehicleCardImageView(vehicle: vehicle)
             
             // Informations principales
             VStack(alignment: .leading, spacing: 4) {
@@ -910,4 +900,130 @@ struct FilterEmptyStateView: View {
         }
         .padding(.vertical, 40)
     }
-} 
+}
+
+// MARK: - Vehicle Card Image View
+private struct VehicleCardImageView: View {
+    let vehicle: Vehicle
+    @State private var loadedImage: UIImage?
+    @State private var imageManager = VehiclesViewImageManager()
+    
+    var body: some View {
+        Group {
+            if let loadedImage = loadedImage {
+                // Affichage de l'image réelle
+                Image(uiImage: loadedImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 60, height: 45)
+                    .clipped()
+                    .cornerRadius(8)
+            } else {
+                // Placeholder avec informations du véhicule
+                VehicleSmallPlaceholder(vehicle: vehicle)
+            }
+        }
+        .onAppear {
+            loadVehicleImage()
+        }
+        .onChange(of: vehicle.mainImageURL) { _, _ in
+            loadVehicleImage()
+        }
+    }
+    
+    private func loadVehicleImage() {
+        guard let mainImageURL = vehicle.mainImageURL else {
+            loadedImage = nil
+            return
+        }
+        
+        loadedImage = imageManager.loadImage(fileName: mainImageURL)
+    }
+}
+
+// MARK: - Vehicle Small Placeholder
+private struct VehicleSmallPlaceholder: View {
+    let vehicle: Vehicle
+    
+    private var vehicleIcon: String {
+        switch vehicle.fuelType {
+        case .electric:
+            return "bolt.car"
+        case .hybrid:
+            return "leaf.circle"
+        default:
+            return "car"
+        }
+    }
+    
+    private var gradientColors: [Color] {
+        switch vehicle.color.lowercased() {
+        case "rouge", "red":
+            return [Color.red.opacity(0.3), Color.red.opacity(0.1)]
+        case "bleu", "blue":
+            return [Color.blue.opacity(0.3), Color.blue.opacity(0.1)]
+        case "vert", "green":
+            return [Color.green.opacity(0.3), Color.green.opacity(0.1)]
+        case "noir", "black":
+            return [Color.black.opacity(0.3), Color.gray.opacity(0.1)]
+        case "blanc", "white":
+            return [Color.gray.opacity(0.2), Color.gray.opacity(0.05)]
+        case "gris", "gray", "grey":
+            return [Color.gray.opacity(0.3), Color.gray.opacity(0.1)]
+        case "jaune", "yellow":
+            return [Color.yellow.opacity(0.3), Color.yellow.opacity(0.1)]
+        case "orange":
+            return [Color.orange.opacity(0.3), Color.orange.opacity(0.1)]
+        case "violet", "purple":
+            return [Color.purple.opacity(0.3), Color.purple.opacity(0.1)]
+        default:
+            return [Color.blue.opacity(0.2), Color.blue.opacity(0.05)]
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            // Gradient de fond basé sur la couleur du véhicule
+            LinearGradient(
+                gradient: Gradient(colors: gradientColors),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            
+            // Icône du véhicule
+            Image(systemName: vehicleIcon)
+                .font(.caption)
+                .foregroundColor(.primary.opacity(0.6))
+        }
+        .frame(width: 60, height: 45)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(.systemGray4), lineWidth: 0.5)
+        )
+    }
+}
+
+// MARK: - Vehicles View Image Manager
+private class VehiclesViewImageManager {
+    
+    // MARK: - Répertoires
+    private var documentsURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    }
+    
+    private var vehicleImagesURL: URL {
+        documentsURL.appendingPathComponent("VehicleImages")
+    }
+    
+    // MARK: - Récupération d'images
+    func loadImage(fileName: String) -> UIImage? {
+        let fileURL = vehicleImagesURL.appendingPathComponent(fileName)
+        
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+        
+        return UIImage(contentsOfFile: fileURL.path)
+    }
+}

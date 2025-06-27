@@ -4,6 +4,7 @@ struct AddRentalContractView: View {
     let vehicle: Vehicle
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var rentalService = RentalService.shared
+    @EnvironmentObject var localizationService: LocalizationService
     
     // Champs du formulaire
     @State private var renterName = ""
@@ -113,7 +114,7 @@ struct AddRentalContractView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
-                    Text("\(vehicle.year) • \(vehicle.color)")
+                    Text("\(String(vehicle.year)) • \(vehicle.color)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -138,11 +139,13 @@ struct AddRentalContractView: View {
     private var datesSection: some View {
         FormSection(title: L(("Période de location", "Rental period")), icon: "calendar") {
             VStack(spacing: 16) {
-                DatePicker(L(("Date de début", "Start date")), selection: $startDate, displayedComponents: .date)
-                    .datePickerStyle(.compact)
-                
-                DatePicker(L(("Date de fin", "End date")), selection: $endDate, displayedComponents: .date)
-                    .datePickerStyle(.compact)
+                                        DatePicker(L(("Date de début", "Start date")), selection: $startDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .environment(\.locale, Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US"))
+                        
+                        DatePicker(L(("Date de fin", "End date")), selection: $endDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .environment(\.locale, Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US"))
                 
                 if numberOfDays > 0 {
                     HStack {

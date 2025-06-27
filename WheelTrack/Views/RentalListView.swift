@@ -212,10 +212,12 @@ struct PrefilledContractRow: View {
     let contract: RentalContract
     let vehicle: Vehicle
     let onTap: () -> Void
+    @AppStorage("app_language") private var appLanguage = "fr"
     
     private var formattedDateRange: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: appLanguage == "fr" ? "fr_FR" : "en_US")
         return "\(formatter.string(from: contract.startDate)) - \(formatter.string(from: contract.endDate))"
     }
     
@@ -285,10 +287,12 @@ struct RentalContractRow: View {
     let contract: RentalContract
     let statusColor: Color
     let onTap: () -> Void
+    @AppStorage("app_language") private var appLanguage = "fr"
     
     private var formattedDateRange: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: appLanguage == "fr" ? "fr_FR" : "en_US")
         return "\(formatter.string(from: contract.startDate)) - \(formatter.string(from: contract.endDate))"
     }
     

@@ -370,6 +370,7 @@ extension CloudKitPreferencesService {
         } else {
             formatter.dateStyle = .short
             formatter.timeStyle = .short
+            formatter.locale = Locale(identifier: "fr_FR") // Par défaut en français
             return formatter.string(from: date)
         }
     }

@@ -538,6 +538,7 @@ struct EmptyExpensesView: View {
 struct ModernExpenseRowView: View {
     let expense: Expense
     let vehicle: Vehicle?
+    @EnvironmentObject var localizationService: LocalizationService
     
     var body: some View {
         HStack(spacing: 16) {
@@ -565,7 +566,7 @@ struct ModernExpenseRowView: View {
                     .foregroundColor(.primary)
                 
                 HStack(spacing: 8) {
-                    Text(expense.date, style: .date)
+                    Text(formattedDate(expense.date))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
@@ -593,6 +594,13 @@ struct ModernExpenseRowView: View {
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+    
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US")
+        return formatter.string(from: date)
     }
     
     private var categoryColor: Color {
@@ -640,14 +648,17 @@ struct ModernBarChartView: View {
                 let date = calendar.startOfDay(for: expense.date)
                 let formatter = DateFormatter()
                 formatter.dateFormat = "dd/MM"
+                formatter.locale = Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US")
                 key = formatter.string(from: date)
             case .year:
                 let formatter = DateFormatter()
                 formatter.dateFormat = "MMM yyyy"
+                formatter.locale = Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US")
                 key = formatter.string(from: expense.date)
             case .quarter, .all:
                 let formatter = DateFormatter()
                 formatter.dateFormat = "MMM yyyy"
+                formatter.locale = Locale(identifier: localizationService.currentLanguage == "fr" ? "fr_FR" : "en_US")
                 key = formatter.string(from: expense.date)
             }
             groups[key, default: 0] += expense.amount
