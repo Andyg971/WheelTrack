@@ -2,12 +2,21 @@ import SwiftUI
 import Foundation
 import UserNotifications
 
+// Import pour la vue d'achat Premium
+import StoreKit
+
 public struct SettingsView: View {
     @AppStorage("app_language") private var appLanguage: String = "fr"
     @State private var showingAbout = false
     @State private var showingPrivacy = false
     @State private var showingTerms = false
     @State private var showingNotifications = false
+    @State private var showingPremium = false
+    @State private var showingTestPurchasePopups = false
+    @State private var showingTestPremiumFlow = false
+    @State private var showingStoreKitTest = false
+
+    
     @EnvironmentObject private var appleSignInService: AppleSignInService
     
     public init() {}
@@ -177,6 +186,97 @@ public struct SettingsView: View {
                     .accessibilityLabel("Se déconnecter")
                     .accessibilityHint("Déconnexion de votre compte Apple")
                 }
+                
+                // Section Premium
+                Section("Premium") {
+                    Button(action: { showingPremium = true }) {
+                        HStack {
+                            Image(systemName: "crown.fill")
+                                .foregroundColor(.yellow)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("WheelTrack Premium")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            if FreemiumService.shared.isPremium {
+                                Text("✅")
+                                    .font(.caption)
+                            }
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("WheelTrack Premium")
+                    .accessibilityHint("Gérer votre abonnement Premium")
+                }
+                
+                // Section de développement/test (à masquer en production)
+                #if DEBUG
+                Section("🛠️ Développement") {
+                    Button(action: { showingTestPurchasePopups = true }) {
+                        HStack {
+                            Image(systemName: "testtube.2")
+                                .foregroundColor(.orange)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Test Pop-ups d'Achat")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: { showingTestPremiumFlow = true }) {
+                        HStack {
+                            Image(systemName: "crown.circle")
+                                .foregroundColor(.purple)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Test Flux Premium")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: { showingStoreKitTest = true }) {
+                        HStack {
+                            Image(systemName: "cart.circle")
+                                .foregroundColor(.green)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("Test StoreKit")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                #endif
             }
             .navigationTitle("Réglages")
             .navigationBarTitleDisplayMode(.large)
@@ -188,6 +288,18 @@ public struct SettingsView: View {
             }
             .sheet(isPresented: $showingNotifications) {
                 NotificationSettingsView(language: appLanguage)
+            }
+            .sheet(isPresented: $showingPremium) {
+                PremiumUpgradeView()
+            }
+            .sheet(isPresented: $showingTestPurchasePopups) {
+                TestPurchasePopupsSheet()
+            }
+            .sheet(isPresented: $showingTestPremiumFlow) {
+                TestPremiumFlowSheet()
+            }
+            .sheet(isPresented: $showingStoreKitTest) {
+                StoreKitTestView()
             }
         }
         .accessibilityIdentifier("SettingsView")
@@ -203,6 +315,7 @@ public struct SettingsView: View {
         appleSignInService.signOut()
         UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
     }
+
 }
 
 // MARK: - Simple About View (intégrée pour éviter les problèmes d'import)
@@ -960,6 +1073,114 @@ struct TemporaryGeneralSettingsView: View {
             }
             
             showingLanguageAlert = true
+        }
+    }
+}
+
+// MARK: - Test Views
+
+/// Vue de test simple pour les pop-ups d'achat
+private struct TestPurchasePopupsSheet: View {
+    @StateObject private var freemiumService = FreemiumService.shared
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Image(systemName: "testtube.2")
+                    .font(.system(size: 60))
+                    .foregroundColor(.orange)
+                
+                Text("Test Pop-ups d'Achat")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Text("Testez les différentes pop-ups de confirmation d'achat")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                
+                VStack(spacing: 12) {
+                    Button("Test Achat Mensuel") {
+                        freemiumService.showPurchaseSuccessPopup(purchaseType: .monthly, productID: "monthly")
+                        dismiss()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Button("Test Achat Annuel") {
+                        freemiumService.showPurchaseSuccessPopup(purchaseType: .yearly, productID: "yearly")
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button("Test Achat à Vie") {
+                        freemiumService.showPurchaseSuccessPopup(purchaseType: .lifetime, productID: "lifetime")
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Test Pop-ups")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fermer") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+/// Vue de test simple pour le flux Premium
+private struct TestPremiumFlowSheet: View {
+    @StateObject private var freemiumService = FreemiumService.shared
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Image(systemName: "crown.circle")
+                    .font(.system(size: 60))
+                    .foregroundColor(.purple)
+                
+                Text("Test Flux Premium")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Text("État actuel: \(freemiumService.isPremium ? "Premium" : "Gratuit")")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                VStack(spacing: 12) {
+                    Button("Activer Premium Test") {
+                        freemiumService.activatePremium(purchaseType: .test)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Button("Désactiver Premium") {
+                        freemiumService.deactivatePremium()
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button("Ouvrir Vue d'Achat") {
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Test Premium")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fermer") { dismiss() }
+                }
+            }
         }
     }
 }

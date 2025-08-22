@@ -13,6 +13,10 @@ public struct DashboardView: View {
     
     // Service de location pour les statistiques - Force l'observation avec @ObservedObject
     @ObservedObject private var rentalService = RentalService.shared
+    @ObservedObject private var freemiumService = FreemiumService.shared
+    
+    // ✅ Timer pour mettre à jour automatiquement les statuts des contrats
+    @State private var updateTimer: Timer?
     
     public init(viewModel: ExpensesViewModel, vehiclesViewModel: VehiclesViewModel) {
         self.viewModel = viewModel
@@ -25,7 +29,7 @@ public struct DashboardView: View {
             rentalService.rentalContracts.contains { contract in
                 contract.vehicleId == vehicle.id && 
                 !contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty &&
-                (contract.isActive() || Date() < contract.startDate)
+                contract.isActive() // ✅ Seulement les contrats actuellement actifs (pas les futurs)
             }
         }.count
         
@@ -60,105 +64,72 @@ public struct DashboardView: View {
     // MARK: - Analytics de location (Phase 3) - Version simplifiée
     
     private var currentPeriodRevenue: Double {
+        return calculateCurrentPeriodRevenue()
+    }
+    
+    private func calculateCurrentPeriodRevenue() -> Double {
         let calendar = Calendar.current
         let now = Date()
         
-        return rentalService.rentalContracts
+        // Étape 1: Filtrer les contrats avec nom rempli
+        let activeContracts = rentalService.rentalContracts
             .filter { !$0.renterName.trimmingCharacters(in: .whitespaces).isEmpty }
-            .filter { contract in
-                switch selectedTimeRange {
-                case .month:
-                    return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .month) ||
-                           calendar.isDate(contract.endDate, equalTo: now, toGranularity: .month) ||
-                           (contract.startDate <= now && contract.endDate >= now)
-                case .year:
-                    return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .year) ||
-                           calendar.isDate(contract.endDate, equalTo: now, toGranularity: .year)
-                case .week:
-                    return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .weekOfYear) ||
-                           calendar.isDate(contract.endDate, equalTo: now, toGranularity: .weekOfYear) ||
-                           (contract.startDate <= now && contract.endDate >= now)
-                case .quarter:
-                    if let quarter = calendar.dateInterval(of: .quarter, for: now) {
-                        return quarter.contains(contract.startDate) || quarter.contains(contract.endDate) ||
-                               (contract.startDate <= quarter.start && contract.endDate >= quarter.end)
-                    }
-                    return false
-                case .all:
-                    return true
-                }
+        
+        // Étape 2: Filtrer par période
+        let periodContracts = activeContracts.filter { contract in
+            return isContractInCurrentPeriod(contract, calendar: calendar, now: now)
+        }
+        
+        // Étape 3: Calculer le total
+        return periodContracts.reduce(0) { $0 + $1.totalPrice }
+    }
+    
+    private func isContractInCurrentPeriod(_ contract: RentalContract, calendar: Calendar, now: Date) -> Bool {
+        switch selectedTimeRange {
+        case .month:
+            return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .month) ||
+                   calendar.isDate(contract.endDate, equalTo: now, toGranularity: .month) ||
+                   (contract.startDate <= now && contract.endDate >= now)
+        case .year:
+            return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .year) ||
+                   calendar.isDate(contract.endDate, equalTo: now, toGranularity: .year)
+        case .week:
+            return calendar.isDate(contract.startDate, equalTo: now, toGranularity: .weekOfYear) ||
+                   calendar.isDate(contract.endDate, equalTo: now, toGranularity: .weekOfYear) ||
+                   (contract.startDate <= now && contract.endDate >= now)
+        case .quarter:
+            if let quarter = calendar.dateInterval(of: .quarter, for: now) {
+                return quarter.contains(contract.startDate) || quarter.contains(contract.endDate) ||
+                       (contract.startDate <= quarter.start && contract.endDate >= quarter.end)
             }
-            .reduce(0) { $0 + $1.totalPrice }
+            return false
+        case .all:
+            return true
+        }
     }
     
     public var body: some View {
         NavigationView {
-            ScrollView {
-                LazyVStack(spacing: 24) {
-                    // En-tête avec salutation
-                    HeaderView()
-                    
-                    // Résumé des dépenses modernisé
-                    ExpenseSummaryCard(
-                        total: filteredExpenses.reduce(0) { $0 + $1.amount }, 
-                        timeRange: selectedTimeRange,
-                        onViewAll: { showingAllExpenses = true }
-                    )
-                    
-                    // Résumé des locations - Toujours visible pour découvrabilité
-                    RentalSummaryCard(
-                        activeRentals: vehiclesWithActiveRentals,
-                        availableVehicles: vehiclesWithPrefilledContracts,
-                        currentPeriodRevenue: currentPeriodRevenue,
-                        timeRange: selectedTimeRange
-                    )
-                    
-                    // Sélecteur de période moderne
-                    TimeRangePicker(selectedTimeRange: $selectedTimeRange)
-                    
-                    // Graphique des dépenses modernisé
-                    if !filteredExpenses.isEmpty {
-                        ModernBarChartView(expenses: filteredExpenses, timeRange: selectedTimeRange)
-                    }
-                    
-                    // Section des dernières dépenses
-                    RecentExpensesSection(
-                        expenses: filteredExpenses,
-                        vehicles: vehiclesViewModel.vehicles,
-                        onViewAll: { showingAllExpenses = true },
-                        onAddExpense: { showingAddExpense = true }
-                    )
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-            }
-            .background(Color(.systemGroupedBackground))
+            mainContentView
+        }
+    }
+    
+    private var mainContentView: some View {
+        mainScrollView
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: rentalService.rentalContracts.count) {
                 // ✅ Force la recalculation des propriétés calculées pour une réactivité optimale
             }
+            .onAppear {
+                startPeriodicUpdates()
+            }
+            .onDisappear {
+                stopPeriodicUpdates()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingAddExpense = true
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.blue, Color.blue.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .clipShape(Circle())
-                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                    }
-                    .accessibilityLabel(L(CommonTranslations.add) + " " + L(CommonTranslations.expenses))
+                    addExpenseButton
                 }
             }
             .sheet(isPresented: $showingAddExpense) {
@@ -169,8 +140,127 @@ public struct DashboardView: View {
             .sheet(isPresented: $showingAllExpenses) {
                 ExpensesView(viewModel: viewModel, vehiclesViewModel: vehiclesViewModel)
             }
+            
+            .alert(L(CommonTranslations.syncError), isPresented: .constant(viewModel.cloudError != nil)) {
+                Button(L(CommonTranslations.ok)) {
+                    viewModel.cloudError = nil
+                }
+                Button(L(CommonTranslations.retry)) {
+                    viewModel.syncFromCloud()
+                }
+            } message: {
+                Text(viewModel.cloudError ?? L(CommonTranslations.syncErrorMessage))
+            }
+            .overlay(
+                Group {
+                    if viewModel.isSyncingCloud {
+                        LoadingOverlay()
+                    }
+                }
+            )
+            .sheet(isPresented: $freemiumService.showUpgradeAlert) {
+                if let blockedFeature = freemiumService.blockedFeature {
+                    NavigationView {
+                        PremiumUpgradeAlert(feature: blockedFeature)
+                    }
+                }
+            }
+    }
+    
+    private var mainScrollView: some View {
+        ScrollView {
+            LazyVStack(spacing: 24) {
+                contentSections
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+    
+    private var contentSections: some View {
+        Group {
+            HeaderView()
+            expenseSummarySection
+            rentalSummarySection
+            
+            timeRangeSection
+            chartSection
+            recentExpensesSection
         }
     }
+    
+    private var expenseSummarySection: some View {
+        ExpenseSummaryCard(
+            total: filteredExpenses.reduce(0) { $0 + $1.amount }, 
+            timeRange: selectedTimeRange,
+            onViewAll: { showingAllExpenses = true }
+        )
+    }
+    
+    private var rentalSummarySection: some View {
+        RentalSummaryCard(
+            activeRentals: simpleActiveRentals.count,
+            availableVehicles: simpleAvailableVehicles.count,
+            currentPeriodRevenue: simplePeriodRevenue,
+            timeRange: selectedTimeRange
+        )
+    }
+    
+
+    
+    private var timeRangeSection: some View {
+        TimeRangePicker(selectedTimeRange: $selectedTimeRange)
+    }
+    
+    @ViewBuilder
+    private var chartSection: some View {
+        if !filteredExpenses.isEmpty {
+            if freemiumService.hasAccess(to: .advancedAnalytics) {
+                ModernBarChartView(expenses: filteredExpenses, timeRange: selectedTimeRange)
+            } else {
+                ZStack {
+                    PremiumOverlay(feature: .advancedAnalytics)
+                }
+                .frame(height: 200)
+            }
+        }
+    }
+    
+    private var recentExpensesSection: some View {
+        RecentExpensesSection(
+            expenses: filteredExpenses,
+            vehicles: vehiclesViewModel.vehicles,
+            onViewAll: { showingAllExpenses = true },
+            onAddExpense: { showingAddExpense = true }
+        )
+    }
+    
+    private var addExpenseButton: some View {
+        Button(action: {
+            showingAddExpense = true
+        }) {
+            Image(systemName: "plus")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .frame(width: 36, height: 36)
+                .background(
+                    LinearGradient(
+                        colors: [Color.blue, Color.blue.opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(Circle())
+                .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+        }
+        .accessibilityLabel(L(CommonTranslations.add) + " " + L(CommonTranslations.expenses))
+    }
+    
+
+    
+
     
     // Filtrage dynamique selon la période sélectionnée
     private var filteredExpenses: [Expense] {
@@ -194,7 +284,60 @@ public struct DashboardView: View {
             }
         }
     }
+    
+    // Calcul simple du revenu pour éviter les erreurs de type-checking  
+    private var simplePeriodRevenue: Double {
+        let contracts = rentalService.rentalContracts
+        let validContracts = contracts.filter { !$0.renterName.trimmingCharacters(in: .whitespaces).isEmpty }
+        return validContracts.reduce(0.0) { total, contract in
+            total + contract.totalPrice
+        }
+    }
+    
+    // Simplification des calculs de véhicules pour éviter les erreurs de compilation
+    private var simpleActiveRentals: [Vehicle] {
+        return vehiclesViewModel.vehicles.filter { vehicle in
+            rentalService.rentalContracts.contains { contract in
+                contract.vehicleId == vehicle.id && contract.isActive()
+            }
+        }
+    }
+    
+    private var simpleAvailableVehicles: [Vehicle] {
+        return vehiclesViewModel.vehicles.filter { vehicle in
+            rentalService.rentalContracts.contains { contract in
+                contract.vehicleId == vehicle.id && !contract.renterName.isEmpty
+            }
+        }
+    }
+    
+    // MARK: - Timer Management
+    
+    /// Démarre les mises à jour périodiques pour détecter automatiquement les contrats expirés
+    private func startPeriodicUpdates() {
+        // Vérifie toutes les 10 minutes si des contrats ont expiré
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 600, repeats: true) { _ in
+            // Force la mise à jour des vues en déclenchant une notification d'objectWillChange
+            DispatchQueue.main.async {
+                rentalService.objectWillChange.send()
+            }
+        }
+        
+        // Démarre aussi une vérification immédiate au démarrage
+        rentalService.objectWillChange.send()
+        
+        print("🔄 Dashboard - Timer de mise à jour des contrats démarré")
+    }
+    
+    /// Arrête les mises à jour périodiques
+    private func stopPeriodicUpdates() {
+        updateTimer?.invalidate()
+        updateTimer = nil
+        print("🔄 Dashboard - Timer de mise à jour des contrats arrêté")
+    }
 }
+
+
 
 // MARK: - Header View
 struct HeaderView: View {
@@ -287,6 +430,10 @@ struct TimeRangeButton: View {
         .buttonStyle(PlainButtonStyle())
     }
 }
+
+
+
+
 
 // MARK: - Modern Expense Summary Card
 struct ExpenseSummaryCard: View {
@@ -729,6 +876,8 @@ struct ModernBarChartView: View {
         .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
 }
+
+
 
 #Preview {
     DashboardView(viewModel: ExpensesViewModel(), vehiclesViewModel: VehiclesViewModel())

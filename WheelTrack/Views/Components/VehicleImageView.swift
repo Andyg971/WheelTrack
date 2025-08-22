@@ -78,14 +78,7 @@ private struct VehiclePlaceholder: View {
     let size: VehicleImageView.ImageSize
     
     private var vehicleIcon: String {
-        switch vehicle.fuelType {
-        case .electric:
-            return "bolt.car"
-        case .hybrid:
-            return "leaf.circle"
-        default:
-            return "car"
-        }
+        return vehicle.fuelType.vehicleIcon
     }
     
     private var gradientColors: [Color] {

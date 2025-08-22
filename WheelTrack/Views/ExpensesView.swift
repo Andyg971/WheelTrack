@@ -9,6 +9,8 @@ public struct ExpensesView: View {
     @State private var selectedTimeRange: TimeRange = .month
     @State private var editingExpense: Expense? = nil
 
+
+
     // ✅ Migration vers système centralisé
     @EnvironmentObject var localizationService: LocalizationService
 
@@ -26,6 +28,8 @@ public struct ExpensesView: View {
                     
                     // Résumé des dépenses modernisé
                     modernSummarySection
+                    
+
                     
                     // Filtres modernes
                     modernFiltersSection
@@ -56,6 +60,7 @@ public struct ExpensesView: View {
                 }
             )
         }
+
         .overlay(alignment: .bottomTrailing) {
             // Bouton flottant unifié
             if !viewModel.filteredExpenses.isEmpty {
@@ -83,7 +88,26 @@ public struct ExpensesView: View {
                 .padding(.bottom, 30)
             }
         }
+        .alert(L(CommonTranslations.syncError), isPresented: .constant(viewModel.cloudError != nil)) {
+            Button(L(CommonTranslations.ok)) {
+                viewModel.cloudError = nil
+            }
+            Button(L(CommonTranslations.retry)) {
+                viewModel.syncFromCloud()
+            }
+        } message: {
+            Text(viewModel.cloudError ?? L(CommonTranslations.syncErrorMessage))
+        }
+        .overlay(
+            // Indicateur de chargement CloudKit
+            Group {
+                if viewModel.isSyncingCloud {
+                    LoadingOverlay()
+                }
+            }
+        )
     }
+
     
     // MARK: - Modern Sections
     
@@ -530,6 +554,37 @@ struct ExpenseRowView: View {
         case .accessories: return "plus.circle.fill"
         case .other: return "ellipsis.circle.fill"
         }
+    }
+}
+
+// MARK: - Composant de statistique premium
+struct StatCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(color)
+            
+            Text(value)
+                .font(.headline)
+                .fontWeight(.bold)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(color.opacity(0.1))
+        )
     }
 }
 

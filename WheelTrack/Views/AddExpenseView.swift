@@ -12,6 +12,10 @@ struct AddExpenseView: View {
     @State private var date: Date = Date()
     @State private var selectedVehicleId: UUID?
     
+    // États de validation
+    @State private var showingValidationAlert = false
+    @State private var validationMessage = ""
+    
     // Pour fermer la vue
     @Environment(\.dismiss) private var dismiss
     @StateObject private var localizationService = LocalizationService.shared
@@ -51,23 +55,27 @@ struct AddExpenseView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(CommonTranslations.add.0) {
-                        guard let amountValue = Double(amount), !description.isEmpty, let vehicleId = selectedVehicleId else { return }
-                        
-                        let expense = Expense(
-                            id: UUID(),
-                            vehicleId: vehicleId,
-                            date: date,
-                            amount: amountValue,
-                            category: selectedCategory,
-                            description: description,
-                            mileage: 0,
-                            receiptImageURL: nil,
-                            notes: ""
-                        )
-                        onAdd(expense)
-                        dismiss()
+                        if validateForm() {
+                            let amountValue = Double(amount)!
+                            let vehicleId = selectedVehicleId!
+                            
+                            let expense = Expense(
+                                id: UUID(),
+                                vehicleId: vehicleId,
+                                date: date,
+                                amount: amountValue,
+                                category: selectedCategory,
+                                description: description,
+                                mileage: 0,
+                                receiptImageURL: nil,
+                                notes: ""
+                            )
+                            onAdd(expense)
+                            dismiss()
+                        } else {
+                            showingValidationAlert = true
+                        }
                     }
-                    .disabled(description.isEmpty || Double(amount) == nil || selectedVehicleId == nil)
                     .accessibilityIdentifier("addButton")
                 }
                 ToolbarItem(placement: .cancellationAction) {
@@ -82,6 +90,47 @@ struct AddExpenseView: View {
                 selectedVehicleId = vehicles.first?.id
             }
         }
+        .alert(L(CommonTranslations.validationError), isPresented: $showingValidationAlert) {
+            Button(L(CommonTranslations.ok)) { }
+        } message: {
+            Text(validationMessage)
+        }
+    }
+    
+    // MARK: - Validation
+    
+    /// Valide le formulaire et définit le message d'erreur approprié
+    private func validateForm() -> Bool {
+        // Vérifier que tous les champs obligatoires sont remplis
+        if description.trimmingCharacters(in: .whitespaces).isEmpty {
+            validationMessage = L(CommonTranslations.requiredFields)
+            return false
+        }
+        
+        if selectedVehicleId == nil {
+            validationMessage = L(CommonTranslations.requiredFields)
+            return false
+        }
+        
+        // Vérifier que le montant est valide
+        guard let amountValue = Double(amount) else {
+            validationMessage = L(CommonTranslations.invalidAmount)
+            return false
+        }
+        
+        if amountValue <= 0 {
+            validationMessage = L(CommonTranslations.invalidAmount)
+            return false
+        }
+        
+        // Vérifier que la date n'est pas dans le futur (plus de 1 jour)
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        if date > tomorrow {
+            validationMessage = localizationService.text("La date ne peut pas être dans le futur", "Date cannot be in the future")
+            return false
+        }
+        
+        return true
     }
 }
 

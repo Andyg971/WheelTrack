@@ -9,11 +9,19 @@ public struct VehiclesView: View {
     @State private var selectedFilter: VehicleFilter = .all
     @State private var editingVehicle: Vehicle? = nil
     
+
+    
     // ✅ Migration vers système centralisé
     @EnvironmentObject var localizationService: LocalizationService
     
     // Service de location pour détecter les contrats
     @ObservedObject private var rentalService = RentalService.shared
+    
+    // Service freemium pour les vérifications de limites
+    @ObservedObject private var freemiumService = FreemiumService.shared
+    
+    // ✅ Timer pour mettre à jour automatiquement les statuts des contrats
+    @State private var updateTimer: Timer?
     
     init(viewModel: VehiclesViewModel, expensesViewModel: ExpensesViewModel, maintenanceViewModel: MaintenanceViewModel) {
         self.viewModel = viewModel
@@ -32,7 +40,7 @@ public struct VehiclesView: View {
         return rentalService.rentalContracts.contains { contract in
             contract.vehicleId == vehicleId && 
             !contract.renterName.trimmingCharacters(in: .whitespaces).isEmpty &&
-            (contract.isActive() || Date() < contract.startDate)
+            contract.isActive() // ✅ Seulement les contrats actuellement actifs (pas les futurs)
         }
     }
     
@@ -82,6 +90,12 @@ public struct VehiclesView: View {
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                startPeriodicUpdates()
+            }
+            .onDisappear {
+                stopPeriodicUpdates()
+            }
             .sheet(isPresented: $showingAddVehicle) {
                 AddVehicleView { vehicle in
                     viewModel.addVehicle(vehicle)
@@ -92,11 +106,38 @@ public struct VehiclesView: View {
                     viewModel.updateVehicle(updatedVehicle)
                 }
             }
+            .sheet(isPresented: $freemiumService.showUpgradeAlert) {
+                // ✅ Affichage direct sans NavigationView - plus stable
+                if let blockedFeature = freemiumService.blockedFeature {
+                    PremiumUpgradeAlert(feature: blockedFeature)
+                        // ✅ Protection supplémentaire pour les simulateurs
+                        .onAppear {
+                            print("📱 VehiclesView - Popup Premium affichée pour: \(blockedFeature)")
+                        }
+                } else {
+                    // Fallback si pas de feature bloquée
+                    VStack {
+                        Text("Fonctionnalité Premium requise")
+                            .font(.headline)
+                            .padding()
+                        Button("Fermer") {
+                            freemiumService.dismissUpgradeAlert()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
+                }
+            }
             .overlay(alignment: .bottomTrailing) {
                 // Bouton flottant unifié
                 if !viewModel.vehicles.isEmpty {
                     Button(action: {
-                        showingAddVehicle = true
+                        // Vérification freemium avant d'ajouter un véhicule
+                        if freemiumService.canAddVehicle(currentCount: viewModel.vehicles.count) {
+                            showingAddVehicle = true
+                        } else {
+                            freemiumService.requestUpgrade(for: .unlimitedVehicles)
+                        }
                     }) {
                         Image(systemName: "plus")
                             .font(.title2)
@@ -160,6 +201,7 @@ public struct VehiclesView: View {
                 }
                 Spacer()
             }
+
         }
     }
     
@@ -344,7 +386,14 @@ public struct VehiclesView: View {
                     .padding(.horizontal, 32)
             }
             
-            Button(action: { showingAddVehicle = true }) {
+            Button(action: { 
+                // Vérification freemium avant d'ajouter un véhicule
+                if freemiumService.canAddVehicle(currentCount: viewModel.vehicles.count) {
+                    showingAddVehicle = true
+                } else {
+                    freemiumService.requestUpgrade(for: .unlimitedVehicles)
+                }
+            }) {
                 HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 16))
@@ -399,6 +448,37 @@ public struct VehiclesView: View {
             return vehicles.filter { !$0.isActive }
         }
     }
+    
+    // MARK: - Timer Management
+    
+    /// Démarre les mises à jour périodiques pour détecter automatiquement les contrats expirés
+    private func startPeriodicUpdates() {
+        // ✅ Réduire la fréquence et éviter les conflits
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 600, repeats: true) { _ in
+            // ✅ Déplacer la vérification MainActor dans le thread principal
+            DispatchQueue.main.async {
+                // ✅ Vérifier que l'alerte n'est pas active avant de forcer la mise à jour
+                if !freemiumService.showUpgradeAlert {
+                    rentalService.objectWillChange.send()
+                }
+            }
+        }
+        
+        // ✅ Démarrer la vérification immédiate seulement si nécessaire
+        if !freemiumService.showUpgradeAlert {
+            rentalService.objectWillChange.send()
+        }
+        
+        print("🔄 VehiclesView - Timer de mise à jour des contrats démarré")
+    }
+    
+    /// Arrête les mises à jour périodiques
+    private func stopPeriodicUpdates() {
+        updateTimer?.invalidate()
+        updateTimer = nil
+        print("🔄 VehiclesView - Timer de mise à jour des contrats arrêté")
+    }
+
 }
 
 // MARK: - Accessible Empty Vehicles View
@@ -702,17 +782,11 @@ struct ModernVehicleCard: View {
                     .lineLimit(1)
                 
                 HStack(spacing: 8) {
-                    Text(String(vehicle.year))
+                    Text("\(vehicle.year.formatted(.number.grouping(.never))) • \(Int(vehicle.mileage).formatted(.number.locale(Locale(identifier: "fr_FR")))) km")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    
-                    Text("•")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Text("\(Int(vehicle.mileage).formatted()) km")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: false, vertical: true)
                     
                     Spacer()
                     
@@ -764,23 +838,11 @@ struct ModernVehicleCard: View {
     }
     
     private var vehicleColor: Color {
-        switch vehicle.fuelType {
-        case .gasoline: return .blue
-        case .diesel: return .green
-        case .electric: return .yellow
-        case .hybrid: return .purple
-        case .lpg: return .orange
-        }
+        return vehicle.fuelType.color
     }
     
     private var vehicleIcon: String {
-        switch vehicle.fuelType {
-        case .gasoline: return "car.fill"
-        case .diesel: return "car.fill"
-        case .electric: return "bolt.car.fill"
-        case .hybrid: return "leaf.fill"
-        case .lpg: return "car.fill"
-        }
+        return vehicle.fuelType.vehicleIcon
     }
 }
 
@@ -946,14 +1008,7 @@ private struct VehicleSmallPlaceholder: View {
     let vehicle: Vehicle
     
     private var vehicleIcon: String {
-        switch vehicle.fuelType {
-        case .electric:
-            return "bolt.car"
-        case .hybrid:
-            return "leaf.circle"
-        default:
-            return "car"
-        }
+        return vehicle.fuelType.vehicleIcon
     }
     
     private var gradientColors: [Color] {
@@ -982,25 +1037,26 @@ private struct VehicleSmallPlaceholder: View {
     }
     
     var body: some View {
+        // Icône colorée du véhicule selon le type de carburant
         ZStack {
-            // Gradient de fond basé sur la couleur du véhicule
-            LinearGradient(
-                gradient: Gradient(colors: gradientColors),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            // Icône de voiture de base avec couleur du carburant
+            Image(systemName: "car.fill")
+                .font(.title3)
+                .foregroundColor(vehicle.fuelType.color)
             
-            // Icône du véhicule
-            Image(systemName: vehicleIcon)
-                .font(.caption)
-                .foregroundColor(.primary.opacity(0.6))
+            // Symbole spécifique au carburant par-dessus
+            Image(systemName: vehicle.fuelType.overlayIcon)
+                .font(.caption2)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+                .background(
+                    Circle()
+                        .fill(vehicle.fuelType.color.opacity(0.9))
+                        .frame(width: 12, height: 12)
+                )
+                .offset(x: 8, y: -6)
         }
         .frame(width: 60, height: 45)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(.systemGray4), lineWidth: 0.5)
-        )
     }
 }
 

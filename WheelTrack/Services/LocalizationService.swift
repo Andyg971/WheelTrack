@@ -341,6 +341,31 @@ struct CommonTranslations {
     
     static let tutorialPage3Title = ("Synchronisation iCloud", "iCloud Sync")
     static let tutorialPage3Description = ("Vos données sont automatiquement sauvegardées et synchronisées sur tous vos appareils Apple.", "Your data is automatically backed up and synced across all your Apple devices.")
+    
+    // MARK: - Notifications de location
+    static let rentalStartsTomorrow = ("Location démarre demain", "Rental starts tomorrow")
+    static let rentalStartsTomorrowBody = ("récupère le véhicule demain. Pensez à le préparer !", "picks up the vehicle tomorrow. Remember to prepare it!")
+    static let rentalStartsIn2Hours = ("Location dans 2h", "Rental in 2 hours")
+    static let rentalStartsIn2HoursBody = ("arrive bientôt pour récupérer le véhicule", "arrives soon to pick up the vehicle")
+    static let rentalEndsTodayTitle = ("🚨 Fin de location AUJOURD'HUI", "🚨 Rental ends TODAY")
+    static let rentalEndsTodayBody = ("doit rendre le véhicule aujourd'hui", "must return the vehicle today")
+    static let rentalEndsTomorrowTitle = ("Fin de location demain", "Rental ends tomorrow")
+    static let rentalEndsTomorrowBody = ("doit rendre le véhicule demain", "must return the vehicle tomorrow")
+    
+    // MARK: - Messages d'erreur et validation
+    static let syncError = ("Erreur de synchronisation", "Sync Error")
+    static let syncErrorMessage = ("Une erreur est survenue lors de la synchronisation des données.", "An error occurred while syncing data.")
+    static let retry = ("Réessayer", "Retry")
+    static let validationError = ("Erreur de validation", "Validation Error")
+    static let requiredFields = ("Veuillez remplir tous les champs obligatoires", "Please fill in all required fields")
+    static let invalidAmount = ("Le montant doit être supérieur à 0", "Amount must be greater than 0")
+    static let invalidPrice = ("Le prix doit être supérieur à 0", "Price must be greater than 0")
+    static let invalidYear = ("L'année doit être entre 1900 et 2030", "Year must be between 1900 and 2030")
+    static let invalidMileage = ("Le kilométrage doit être positif", "Mileage must be positive")
+    static let networkError = ("Erreur réseau", "Network Error")
+    static let dataError = ("Erreur de données", "Data Error")
+    static let loadingData = ("Chargement des données...", "Loading data...")
+    static let syncingData = ("Synchronisation en cours...", "Syncing data...")
 }
 
 /// Helper pour accéder facilement aux traductions

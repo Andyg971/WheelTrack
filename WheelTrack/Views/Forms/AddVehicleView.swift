@@ -114,6 +114,18 @@ struct AddVehicleView: View {
             return language == "en" ? "Add" : "Ajouter"
         case "cancel":
             return language == "en" ? "Cancel" : "Annuler"
+        case "validation_error":
+            return language == "en" ? "Validation Error" : "Erreur de validation"
+        case "ok":
+            return language == "en" ? "OK" : "OK"
+        case "required_fields":
+            return language == "en" ? "is required" : "est obligatoire"
+        case "invalid_year":
+            return language == "en" ? "Year must be between 1900 and 2030" : "L'année doit être entre 1900 et 2030"
+        case "invalid_mileage":
+            return language == "en" ? "Mileage must be positive" : "Le kilométrage doit être positif"
+        case "invalid_price":
+            return language == "en" ? "Price must be greater than 0" : "Le prix doit être supérieur à 0"
         default:
             return key
         }
@@ -135,6 +147,10 @@ struct AddVehicleView: View {
     @State private var minimumRentalDays = "1"
     @State private var maximumRentalDays = "30"
     @State private var vehicleDescription = ""
+    
+    // États de validation
+    @State private var showingValidationAlert = false
+    @State private var validationMessage = ""
     
     // État pour la gestion des photos
     @State private var newVehicle = Vehicle(
@@ -285,18 +301,83 @@ struct AddVehicleView: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button(AddVehicleView.localText("add", language: appLanguage)) {
-                        saveVehicle()
+                        if validateForm() {
+                            saveVehicle()
+                        } else {
+                            showingValidationAlert = true
+                        }
                     }
-                    .disabled(!isFormValid)
                 }
             }
         }
+        .alert(AddVehicleView.localText("validation_error", language: appLanguage), isPresented: $showingValidationAlert) {
+            Button(AddVehicleView.localText("ok", language: appLanguage)) { }
+        } message: {
+            Text(validationMessage)
+        }
     }
     
-    private var isFormValid: Bool {
-        !brand.isEmpty && !model.isEmpty && !year.isEmpty && 
-        !mileage.isEmpty && !licensePlate.isEmpty && 
-        (!isAvailableForRent || !rentalPricePerDay.isEmpty)
+    // MARK: - Validation
+    
+    /// Valide le formulaire et définit le message d'erreur approprié
+    private func validateForm() -> Bool {
+        // Vérifier les champs obligatoires
+        if brand.trimmingCharacters(in: .whitespaces).isEmpty {
+            validationMessage = AddVehicleView.localText("brand", language: appLanguage) + " " + AddVehicleView.localText("required_fields", language: appLanguage)
+            return false
+        }
+        
+        if model.trimmingCharacters(in: .whitespaces).isEmpty {
+            validationMessage = AddVehicleView.localText("model", language: appLanguage) + " " + AddVehicleView.localText("required_fields", language: appLanguage)
+            return false
+        }
+        
+        if licensePlate.trimmingCharacters(in: .whitespaces).isEmpty {
+            validationMessage = AddVehicleView.localText("license_plate", language: appLanguage) + " " + AddVehicleView.localText("required_fields", language: appLanguage)
+            return false
+        }
+        
+        // Valider l'année
+        guard let yearInt = Int(year) else {
+            validationMessage = AddVehicleView.localText("invalid_year", language: appLanguage)
+            return false
+        }
+        
+        if yearInt < 1900 || yearInt > 2030 {
+            validationMessage = AddVehicleView.localText("invalid_year", language: appLanguage)
+            return false
+        }
+        
+        // Valider le kilométrage
+        guard let mileageDouble = Double(mileage) else {
+            validationMessage = AddVehicleView.localText("invalid_mileage", language: appLanguage)
+            return false
+        }
+        
+        if mileageDouble < 0 {
+            validationMessage = AddVehicleView.localText("invalid_mileage", language: appLanguage)
+            return false
+        }
+        
+        // Valider les champs de location si activés
+        if isAvailableForRent {
+            if rentalPricePerDay.isEmpty {
+                validationMessage = AddVehicleView.localText("daily_rate", language: appLanguage) + " " + AddVehicleView.localText("required_fields", language: appLanguage)
+                return false
+            }
+            
+            guard let priceDouble = Double(rentalPricePerDay) else {
+                validationMessage = AddVehicleView.localText("invalid_price", language: appLanguage)
+                return false
+            }
+            
+            if priceDouble <= 0 {
+                validationMessage = AddVehicleView.localText("invalid_price", language: appLanguage)
+                return false
+            }
+        }
+        
+        return true
     }
     
     private func saveVehicle() {

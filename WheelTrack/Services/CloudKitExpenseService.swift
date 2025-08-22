@@ -7,8 +7,18 @@ class CloudKitExpenseService {
     private let container = CKContainer.default()
     private let recordType = "Expense"
     
+    // 🔧 CLOUDKIT TEMPORAIREMENT DÉSACTIVÉ POUR PUBLICATION V1
+    private let isCloudKitEnabled = false
+    
     // Enregistre une dépense dans CloudKit
     func saveExpense(_ expense: Expense, completion: ((Result<Void, Error>) -> Void)? = nil) {
+        // ✅ Vérifier si CloudKit est activé
+        guard isCloudKitEnabled else {
+            print("⚠️ CloudKit désactivé pour saveExpense - Mode local uniquement")
+            completion?(.success(())) // Simule un succès en mode local
+            return
+        }
+        
         let record = CKRecord(recordType: recordType, recordID: CKRecord.ID(recordName: expense.id.uuidString))
         record["vehicleId"] = expense.vehicleId.uuidString as CKRecordValue
         record["date"] = expense.date as CKRecordValue
@@ -29,6 +39,13 @@ class CloudKitExpenseService {
     
     // Charge toutes les dépenses depuis CloudKit
     func fetchExpenses(completion: @escaping (Result<[Expense], Error>) -> Void) {
+        // ✅ Vérifier si CloudKit est activé
+        guard isCloudKitEnabled else {
+            print("⚠️ CloudKit désactivé pour fetchExpenses - Mode local uniquement")
+            completion(.success([])) // Retourne une liste vide en mode local
+            return
+        }
+        
         let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
         if #available(iOS 15.0, *) {
             container.privateCloudDatabase.fetch(
@@ -66,6 +83,13 @@ class CloudKitExpenseService {
     
     // Supprime une dépense de CloudKit
     func deleteExpense(_ expense: Expense, completion: ((Result<Void, Error>) -> Void)? = nil) {
+        // ✅ Vérifier si CloudKit est activé
+        guard isCloudKitEnabled else {
+            print("⚠️ CloudKit désactivé pour deleteExpense - Mode local uniquement")
+            completion?(.success(())) // Simule un succès en mode local
+            return
+        }
+        
         let recordID = CKRecord.ID(recordName: expense.id.uuidString)
         container.privateCloudDatabase.delete(withRecordID: recordID) { _, error in
             DispatchQueue.main.async {
