@@ -204,41 +204,108 @@ class RentalService: ObservableObject {
     
     private func scheduleNotification(for contract: RentalContract) {
         let center = UNUserNotificationCenter.current()
-        
-        // Notification 1 jour avant la fin du contrat
-        let content = UNMutableNotificationContent()
-        content.title = "Fin de location proche"
-        content.body = "Le contrat de location de \(contract.renterName) se termine demain"
-        content.sound = .default
-        
-        // Calculer la date de notification (1 jour avant la fin)
         let calendar = Calendar.current
-        guard let notificationDate = calendar.date(byAdding: .day, value: -1, to: contract.endDate) else {
-            return
+        let now = Date()
+        
+        // 🚀 NOTIFICATION 1 : Début de location demain (pour préparer le véhicule)
+        if let startTomorrowDate = calendar.date(byAdding: .day, value: -1, to: contract.startDate),
+           startTomorrowDate > now {
+            
+            let content = UNMutableNotificationContent()
+            content.title = L(CommonTranslations.rentalStartsTomorrow)
+            content.body = "\(contract.renterName) \(L(CommonTranslations.rentalStartsTomorrowBody))"
+            content.sound = .default
+            
+            var dateComponents = calendar.dateComponents([.year, .month, .day], from: startTomorrowDate)
+            dateComponents.hour = 18 // 18h la veille
+            dateComponents.minute = 0
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: "rental_start_tomorrow_\(contract.id.uuidString)",
+                content: content,
+                trigger: trigger
+            )
+            center.add(request)
         }
         
-        // Ne programmer que si la date est dans le futur
-        guard notificationDate > Date() else { return }
+        // 🎯 NOTIFICATION 2 : Début de location dans 2h (pour être prêt)
+        if let startSoonDate = calendar.date(byAdding: .hour, value: -2, to: contract.startDate),
+           startSoonDate > now {
+            
+            let content = UNMutableNotificationContent()
+            content.title = L(CommonTranslations.rentalStartsIn2Hours)
+            content.body = "\(contract.renterName) \(L(CommonTranslations.rentalStartsIn2HoursBody))"
+            content.sound = .default
+            
+            let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: startSoonDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+            
+            let request = UNNotificationRequest(
+                identifier: "rental_start_soon_\(contract.id.uuidString)",
+                content: content,
+                trigger: trigger
+            )
+            center.add(request)
+        }
         
-        let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: notificationDate)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+        // ⚠️ NOTIFICATION 3 : Fin de location AUJOURD'HUI (pour récupérer)
+        let endTodayComponents = calendar.dateComponents([.year, .month, .day], from: contract.endDate)
+        var endTodayNotif = endTodayComponents
+        endTodayNotif.hour = 9 // 9h le jour J
+        endTodayNotif.minute = 0
         
-        let request = UNNotificationRequest(
-            identifier: "rental_\(contract.id.uuidString)",
-            content: content,
-            trigger: trigger
-        )
+        if let endTodayDate = calendar.date(from: endTodayNotif),
+           endTodayDate > now {
+            
+            let content = UNMutableNotificationContent()
+            content.title = L(CommonTranslations.rentalEndsTodayTitle)
+            content.body = "\(contract.renterName) \(L(CommonTranslations.rentalEndsTodayBody))"
+            content.sound = .default
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: endTodayNotif, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: "rental_end_today_\(contract.id.uuidString)",
+                content: content,
+                trigger: trigger
+            )
+            center.add(request)
+        }
         
-        center.add(request) { error in
-            if let error = error {
-                print("Erreur lors de la programmation de la notification: \(error)")
-            }
+        // 📋 NOTIFICATION 4 : Fin de location demain (l'ancienne, gardée pour transition)
+        if let endTomorrowDate = calendar.date(byAdding: .day, value: -1, to: contract.endDate),
+           endTomorrowDate > now {
+            
+            let content = UNMutableNotificationContent()
+            content.title = L(CommonTranslations.rentalEndsTomorrowTitle)
+            content.body = "\(contract.renterName) \(L(CommonTranslations.rentalEndsTomorrowBody))"
+            content.sound = .default
+            
+            let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endTomorrowDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+            
+            let request = UNNotificationRequest(
+                identifier: "rental_end_tomorrow_\(contract.id.uuidString)",
+                content: content,
+                trigger: trigger
+            )
+            center.add(request)
         }
     }
     
     private func cancelNotification(for contract: RentalContract) {
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: ["rental_\(contract.id.uuidString)"])
+        
+        // Annuler toutes les notifications liées à ce contrat
+        let identifiers = [
+            "rental_start_tomorrow_\(contract.id.uuidString)",  // Location démarre demain
+            "rental_start_soon_\(contract.id.uuidString)",      // Location dans 2h
+            "rental_end_today_\(contract.id.uuidString)",       // Fin de location AUJOURD'HUI
+            "rental_end_tomorrow_\(contract.id.uuidString)",    // Fin de location demain
+            "rental_\(contract.id.uuidString)"                  // Ancien format (pour compatibilité)
+        ]
+        
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 }
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct RentalListView: View {
     let vehicle: Vehicle
     @ObservedObject private var rentalService = RentalService.shared
+    @ObservedObject private var freemiumService = FreemiumService.shared
     @State private var showingAddRental = false
     @State private var selectedContract: RentalContract?
     @State private var showingContractDetail = false
@@ -36,124 +37,173 @@ struct RentalListView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                if rentalContracts.isEmpty {
-                    emptyStateView
-                } else {
-                    List {
-                        // Section pour les contrats préremplis
-                        if !prefilledContracts.isEmpty {
-                            Section {
-                                ForEach(prefilledContracts) { contract in
-                                    PrefilledContractRow(contract: contract, vehicle: vehicle) {
-                                        selectedContract = contract
-                                        showingContractDetail = true
+            if freemiumService.hasBasicAccessToRentals() {
+                VStack(spacing: 0) {
+                    if rentalContracts.isEmpty {
+                        emptyStateView
+                    } else {
+                        List {
+                            // Section pour les contrats préremplis
+                            if !prefilledContracts.isEmpty {
+                                Section {
+                                    ForEach(prefilledContracts) { contract in
+                                        PrefilledContractRow(contract: contract, vehicle: vehicle) {
+                                            selectedContract = contract
+                                            showingContractDetail = true
+                                        }
+                                    }
+                                    .onDelete(perform: deletePrefilledContracts)
+                                } header: {
+                                    HStack {
+                                        Text("📋 Contrats préremplis")
+                                        Spacer()
+                                        Text("\(prefilledContracts.count)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 2)
+                                            .background(.blue.opacity(0.2))
+                                            .clipShape(RoundedRectangle(cornerRadius: 4))
                                     }
                                 }
-                                .onDelete { indexSet in
-                                    for index in indexSet {
-                                        let contract = prefilledContracts[index]
-                                        contractToDelete = contract
-                                        showingDeleteAlert = true
+                            }
+                            
+                            // Section pour les contrats actifs
+                            if !activeContracts.isEmpty {
+                                Section {
+                                    ForEach(activeContracts) { contract in
+                                        RentalContractRow(contract: contract, statusColor: .green) {
+                                            selectedContract = contract
+                                            showingContractDetail = true
+                                        }
+                                    }
+                                } header: {
+                                    HStack {
+                                        Text("🟢 En cours")
+                                        Spacer()
+                                        Text("\(activeContracts.count)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 2)
+                                            .background(.green.opacity(0.2))
+                                            .clipShape(RoundedRectangle(cornerRadius: 4))
                                     }
                                 }
-                            } header: {
-                                Label(L(("Contrats prêts à compléter", "Contracts ready to complete")), systemImage: "doc.badge.plus")
-                                    .foregroundColor(.blue)
+                            }
+                            
+                            // Section pour les contrats à venir
+                            if !upcomingContracts.isEmpty {
+                                Section {
+                                    ForEach(upcomingContracts) { contract in
+                                        RentalContractRow(contract: contract, statusColor: .orange) {
+                                            selectedContract = contract
+                                            showingContractDetail = true
+                                        }
+                                    }
+                                } header: {
+                                    HStack {
+                                        Text("📅 À venir")
+                                        Spacer()
+                                        Text("\(upcomingContracts.count)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 2)
+                                            .background(.orange.opacity(0.2))
+                                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    }
+                                }
+                            }
+                            
+                            // Section pour les contrats expirés
+                            if !expiredContracts.isEmpty {
+                                Section {
+                                    ForEach(expiredContracts) { contract in
+                                        RentalContractRow(contract: contract, statusColor: .red) {
+                                            selectedContract = contract
+                                            showingContractDetail = true
+                                        }
+                                    }
+                                    .onDelete(perform: deleteExpiredContracts)
+                                } header: {
+                                    HStack {
+                                        Text("🔴 Terminés")
+                                        Spacer()
+                                        Text("\(expiredContracts.count)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 2)
+                                            .background(.red.opacity(0.2))
+                                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    }
+                                }
                             }
                         }
-                        
-                        // Contrats actifs
-                        if !activeContracts.isEmpty {
-                            Section {
-                                ForEach(activeContracts) { contract in
-                                    RentalContractRow(contract: contract, statusColor: .green) {
-                                        selectedContract = contract
-                                        showingContractDetail = true
-                                    }
-                                }
-                                .onDelete { indexSet in
-                                    for index in indexSet {
-                                        let contract = activeContracts[index]
-                                        contractToDelete = contract
-                                        showingDeleteAlert = true
-                                    }
-                                }
-                            } header: {
-                                Label(L(("Contrats actifs", "Active contracts")), systemImage: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                            }
-                        }
-                        
-                        // Contrats à venir
-                        if !upcomingContracts.isEmpty {
-                            Section {
-                                ForEach(upcomingContracts) { contract in
-                                    RentalContractRow(contract: contract, statusColor: .blue) {
-                                        selectedContract = contract
-                                        showingContractDetail = true
-                                    }
-                                }
-                                .onDelete { indexSet in
-                                    for index in indexSet {
-                                        let contract = upcomingContracts[index]
-                                        contractToDelete = contract
-                                        showingDeleteAlert = true
-                                    }
-                                }
-                            } header: {
-                                Label(L(("Contrats à venir", "Upcoming contracts")), systemImage: "clock")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        
-                        // Contrats expirés
-                        if !expiredContracts.isEmpty {
-                            Section {
-                                ForEach(expiredContracts) { contract in
-                                    RentalContractRow(contract: contract, statusColor: .gray) {
-                                        selectedContract = contract
-                                        showingContractDetail = true
-                                    }
-                                }
-                                .onDelete { indexSet in
-                                    for index in indexSet {
-                                        let contract = expiredContracts[index]
-                                        contractToDelete = contract
-                                        showingDeleteAlert = true
-                                    }
-                                }
-                            } header: {
-                                Label(L(("Contrats terminés", "Completed contracts")), systemImage: "checkmark.circle")
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    }
-                    .listStyle(InsetGroupedListStyle())
-                }
-            }
-            .navigationTitle(L(("Locations", "Rentals")))
-            .navigationBarTitleDisplayMode(.large)
-            .sheet(isPresented: $showingAddRental) {
-                AddRentalContractView(vehicle: vehicle)
-            }
-            .navigationDestination(isPresented: $showingContractDetail) {
-                if let contract = selectedContract {
-                    RentalContractDetailView(contract: contract, vehicle: vehicle)
-                }
-            }
-            .alert(L(("Supprimer le contrat", "Delete contract")), isPresented: $showingDeleteAlert) {
-                Button(L(("Supprimer", "Delete")), role: .destructive) {
-                    if let contract = contractToDelete {
-                        deleteContract(contract)
+                        .listStyle(InsetGroupedListStyle())
                     }
                 }
-                Button(L(CommonTranslations.cancel), role: .cancel) {
-                    contractToDelete = nil
-                }
-            } message: {
-                Text(L(("Êtes-vous sûr de vouloir supprimer ce contrat de location ? Cette action est irréversible.", "Are you sure you want to delete this rental contract? This action is irreversible.")))
+            } else {
+                PremiumOverlay(feature: .rentalModule)
             }
+        }
+        .navigationTitle("🚘 Location - \(vehicle.brand) \(vehicle.model)")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    if freemiumService.canAddRental(currentCount: rentalContracts.count) {
+                        showingAddRental = true
+                    } else {
+                        freemiumService.requestUpgrade(for: .rentalModule)
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .foregroundColor(.blue)
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddRental) {
+            AddRentalContractView(vehicle: vehicle)
+        }
+        .sheet(item: $selectedContract) { contract in
+            RentalContractDetailView(contract: contract, vehicle: vehicle)
+        }
+        .sheet(isPresented: $freemiumService.showUpgradeAlert) {
+            if let blockedFeature = freemiumService.blockedFeature {
+                NavigationView {
+                    PremiumUpgradeAlert(feature: blockedFeature)
+                }
+            }
+        }
+        .alert(L(("Supprimer le contrat", "Delete contract")), isPresented: $showingDeleteAlert) {
+            Button(L(("Supprimer", "Delete")), role: .destructive) {
+                if let contract = contractToDelete {
+                    deleteContract(contract)
+                }
+            }
+            Button("Annuler", role: .cancel) {
+                contractToDelete = nil
+            }
+        } message: {
+            Text(L(("Êtes-vous sûr de vouloir supprimer ce contrat de location ? Cette action est irréversible.", "Are you sure you want to delete this rental contract? This action is irreversible.")))
+        }
+    }
+    
+    // MARK: - Méthodes de suppression
+    
+    private func deletePrefilledContracts(at offsets: IndexSet) {
+        for index in offsets {
+            let contract = prefilledContracts[index]
+            deleteContract(contract)
+        }
+    }
+    
+    private func deleteExpiredContracts(at offsets: IndexSet) {
+        for index in offsets {
+            let contract = expiredContracts[index]
+            deleteContract(contract)
         }
     }
     
@@ -161,6 +211,8 @@ struct RentalListView: View {
         rentalService.deleteRentalContract(contract)
         contractToDelete = nil
     }
+    
+    // MARK: - Empty State View
     
     private var emptyStateView: some View {
         VStack(spacing: 24) {
@@ -174,24 +226,22 @@ struct RentalListView: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
-                Text(L(("Ce véhicule sera automatiquement ajouté avec un contrat prérempli si vous l'activez pour la location", "This vehicle will be automatically added with a prefilled contract if you activate it for rental")))
+                Text(L(("Créez votre premier contrat de location pour ce véhicule", "Create your first rental contract for this vehicle")))
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
             }
             
             Button {
                 showingAddRental = true
             } label: {
                 HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text(L(("Créer un contrat", "Create a contract")))
+                    Image(systemName: "plus")
+                    Text(L(("Créer un contrat", "Create contract")))
                 }
                 .font(.headline)
                 .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
+                .padding()
                 .background(
                     LinearGradient(
                         colors: [.blue, .blue.opacity(0.8)],
@@ -383,4 +433,4 @@ struct RentalContractRow: View {
             purchaseMileage: 10000
         ))
     }
-} 
+}

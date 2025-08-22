@@ -5,6 +5,7 @@ import CoreLocation
 public struct GaragesView: View {
     @StateObject private var viewModel = GaragesViewModel()
     @ObservedObject private var locationService = LocationService.shared
+    @ObservedObject private var freemiumService = FreemiumService.shared
     @State private var favoriteGarages: Set<String> = []  // IDs des garages favoris
     @State private var showingLocationAlert = false
     @State private var showOnlyFavorites = false  // Nouveau toggle pour les favoris
@@ -44,8 +45,12 @@ public struct GaragesView: View {
                 Color(.systemGroupedBackground)
                     .ignoresSafeArea()
                 
-                // Vue liste des garages uniquement
-                garageListView
+                if freemiumService.hasAccess(to: .garageModule) {
+                    // Vue liste des garages uniquement
+                    garageListView
+                } else {
+                    PremiumOverlay(feature: .garageModule)
+                }
             }
             .navigationTitle(showOnlyFavorites ? L(CommonTranslations.myFavorites) : L(CommonTranslations.myGarages))
             .navigationBarTitleDisplayMode(.large)
@@ -67,6 +72,13 @@ public struct GaragesView: View {
                 Button(L(CommonTranslations.later), role: .cancel) { }
             } message: {
                 Text(L(CommonTranslations.locationRequiredMessage))
+            }
+            .sheet(isPresented: $freemiumService.showUpgradeAlert) {
+                if let blockedFeature = freemiumService.blockedFeature {
+                    NavigationView {
+                        PremiumUpgradeAlert(feature: blockedFeature)
+                    }
+                }
             }
         }
     }
@@ -244,6 +256,12 @@ public struct GaragesView: View {
     }
     
     private func toggleFavorite(_ garage: Garage) {
+        // Vérification freemium pour les garages favoris
+        if !freemiumService.hasAccess(to: .garageModule) {
+            freemiumService.requestUpgrade(for: .garageModule)
+            return
+        }
+        
         let garageId = garage.id.uuidString
         
         if favoriteGarages.contains(garageId) {

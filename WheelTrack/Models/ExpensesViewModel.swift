@@ -30,7 +30,7 @@ public class ExpensesViewModel: ObservableObject {
     // Initialisation : chargement des dépenses sauvegardées
     public init() {
         loadExpenses()
-        syncFromCloud()
+                    syncFromCloud() // 🔧 Sync Cloud temporairement désactivé pour publication V1
     }
     
     /// Charge les dépenses depuis le stockage local

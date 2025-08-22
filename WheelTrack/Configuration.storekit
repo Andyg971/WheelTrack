@@ -1,0 +1,207 @@
+{
+  "identifier" : "E5B14D4B",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "6502148301",
+      "localizations" : [
+        {
+          "description" : "Accès Premium mensuel à toutes les fonctionnalités de WheelTrack",
+          "displayName" : "WheelTrack Premium - Mensuel",
+          "locale" : "fr"
+        },
+        {
+          "description" : "Monthly Premium access to all WheelTrack features",
+          "displayName" : "WheelTrack Premium - Monthly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "wheeltrack_premium_monthly",
+      "referenceName" : "Premium Monthly",
+      "type" : "AutoRenewable"
+    },
+    {
+      "displayPrice" : "49.99",
+      "familyShareable" : false,
+      "internalID" : "6502148302",
+      "localizations" : [
+        {
+          "description" : "Accès Premium annuel à toutes les fonctionnalités de WheelTrack - Économisez 18%",
+          "displayName" : "WheelTrack Premium - Annuel",
+          "locale" : "fr"
+        },
+        {
+          "description" : "Yearly Premium access to all WheelTrack features - Save 18%",
+          "displayName" : "WheelTrack Premium - Yearly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "wheeltrack_premium_yearly",
+      "referenceName" : "Premium Yearly",
+      "type" : "AutoRenewable"
+    },
+    {
+      "displayPrice" : "19.99",
+      "familyShareable" : false,
+      "internalID" : "6502148303",
+      "localizations" : [
+        {
+          "description" : "Accès Premium à vie à toutes les fonctionnalités de WheelTrack",
+          "displayName" : "WheelTrack Premium - À Vie",
+          "locale" : "fr"
+        },
+        {
+          "description" : "Lifetime Premium access to all WheelTrack features",
+          "displayName" : "WheelTrack Premium - Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "wheeltrack_premium_lifetime",
+      "referenceName" : "Premium Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6502148299",
+    "_developerTeamID" : "5WUC3D8BMJ",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 748094400.60848999,
+    "_locale" : "fr_FR",
+    "_storefront" : "FRA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21451234",
+      "localizations" : [
+        {
+          "description" : "Abonnements Premium WheelTrack",
+          "displayName" : "WheelTrack Premium",
+          "locale" : "fr"
+        },
+        {
+          "description" : "WheelTrack Premium Subscriptions", 
+          "displayName" : "WheelTrack Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Premium Subscriptions",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6502148301",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Accès Premium mensuel à toutes les fonctionnalités de WheelTrack",
+              "displayName" : "WheelTrack Premium - Mensuel",
+              "locale" : "fr"
+            },
+            {
+              "description" : "Monthly Premium access to all WheelTrack features",
+              "displayName" : "WheelTrack Premium - Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "wheeltrack_premium_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium Monthly",
+          "subscriptionGroupID" : "21451234",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "49.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6502148302",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Accès Premium annuel à toutes les fonctionnalités de WheelTrack - Économisez 18%",
+              "displayName" : "WheelTrack Premium - Annuel",
+              "locale" : "fr"
+            },
+            {
+              "description" : "Yearly Premium access to all WheelTrack features - Save 18%",
+              "displayName" : "WheelTrack Premium - Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "wheeltrack_premium_yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Premium Yearly",
+          "subscriptionGroupID" : "21451234",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

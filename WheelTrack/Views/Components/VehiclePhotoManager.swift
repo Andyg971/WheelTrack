@@ -9,6 +9,13 @@ struct VehiclePhotoManager: View {
     @State private var selectedImages: [UIImage] = []
     @State private var photoPickerType: PhotoPickerType = .main
     
+    // MARK: - Types de sélecteur de photos
+    private enum PhotoPickerType {
+        case main
+        case additional
+        case documents
+    }
+    
     // États pour l'affichage
     @State private var mainImage: UIImage?
     @State private var additionalImages: [UIImage] = []
@@ -294,13 +301,6 @@ struct VehiclePhotoManager: View {
             imageManager.loadImage(fileName: fileName, from: .vehicle)
         }
     }
-}
-
-// MARK: - Types de sélecteur de photos
-private enum PhotoPickerType {
-    case main
-    case additional
-    case documents
 }
 
 // MARK: - Preview

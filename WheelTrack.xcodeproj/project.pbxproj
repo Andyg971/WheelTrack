@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EDFFA05C2E4C98EB00459173 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EDFFA05B2E4C98EB00459173 /* StoreKit.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		EDEC76FD2D889D3400BF565D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		EDEC76EC2D889D3200BF565D /* WheelTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WheelTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDEC76FC2D889D3400BF565D /* WheelTrackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WheelTrackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDEC77062D889D3400BF565D /* WheelTrackUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WheelTrackUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EDFFA05B2E4C98EB00459173 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -42,6 +47,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EDFFA05C2E4C98EB00459173 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -66,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				EDEC76EE2D889D3200BF565D /* WheelTrack */,
+				EDFFA05A2E4C98EB00459173 /* Frameworks */,
 				EDEC76ED2D889D3200BF565D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -78,6 +85,14 @@
 				EDEC77062D889D3400BF565D /* WheelTrackUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		EDFFA05A2E4C98EB00459173 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				EDFFA05B2E4C98EB00459173 /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -378,9 +393,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WheelTrack/WheelTrack.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"WheelTrack/Preview Content\"";
+				DEVELOPMENT_TEAM = 5WUC3D8BMJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WheelTrack utilise votre localisation en temps réel pour afficher les garages proches de vous et calculer les itinéraires. L'accès est nécessaire uniquement lorsque vous utilisez l'application.";
@@ -396,6 +413,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Wheel.WheelTrack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -408,9 +426,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WheelTrack/WheelTrack.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"WheelTrack/Preview Content\"";
+				DEVELOPMENT_TEAM = 5WUC3D8BMJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WheelTrack utilise votre localisation en temps réel pour afficher les garages proches de vous et calculer les itinéraires. L'accès est nécessaire uniquement lorsque vous utilisez l'application.";
@@ -426,6 +446,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Wheel.WheelTrack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

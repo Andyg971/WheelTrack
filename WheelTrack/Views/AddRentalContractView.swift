@@ -4,6 +4,7 @@ struct AddRentalContractView: View {
     let vehicle: Vehicle
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var rentalService = RentalService.shared
+    @ObservedObject private var freemiumService = FreemiumService.shared
     @EnvironmentObject var localizationService: LocalizationService
     
     // Champs du formulaire
@@ -45,21 +46,25 @@ struct AddRentalContractView: View {
             ZStack {
                 Color(.systemGroupedBackground).ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // En-tête du véhicule
-                        vehicleHeaderView
-                        
-                        // Formulaire principal
-                        VStack(spacing: 20) {
-                            renterInfoSection
-                            datesSection
-                            pricingSection
-                            conditionSection
+                if freemiumService.hasAccess(to: .rentalModule) {
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // En-tête du véhicule
+                            vehicleHeaderView
+                            
+                            // Formulaire principal
+                            VStack(spacing: 20) {
+                                renterInfoSection
+                                datesSection
+                                pricingSection
+                                conditionSection
+                            }
+                            .padding(.horizontal, 20)
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
                     }
-                    .padding(.vertical, 16)
+                } else {
+                    PremiumOverlay(feature: .rentalModule)
                 }
             }
             .onAppear {

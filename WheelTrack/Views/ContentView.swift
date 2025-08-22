@@ -7,6 +7,7 @@ struct ContentView: View {
     @StateObject private var vehiclesViewModel = VehiclesViewModel()
     @StateObject private var expensesViewModel = ExpensesViewModel()
     @StateObject private var maintenanceViewModel = MaintenanceViewModel()
+    @StateObject private var freemiumService = FreemiumService.shared
     @State private var isLoading = true
     @State private var selectedMainTab = 0
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
@@ -92,6 +93,17 @@ struct ContentView: View {
                             UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
                         }
                     }
+            }
+            
+            // Pop-up de confirmation d'achat Premium
+            if freemiumService.showPurchaseSuccess {
+                PurchaseSuccessView(
+                    purchaseType: freemiumService.lastPurchaseType,
+                    productID: freemiumService.lastProductID
+                )
+                .onDisappear {
+                    freemiumService.showPurchaseSuccess = false
+                }
             }
         }
         .onAppear {

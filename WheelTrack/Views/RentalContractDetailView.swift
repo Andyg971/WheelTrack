@@ -6,6 +6,7 @@ struct RentalContractDetailView: View {
     let vehicle: Vehicle
     @Environment(\.dismiss) private var dismiss
     @StateObject private var rentalService = RentalService.shared
+    @ObservedObject private var freemiumService = FreemiumService.shared
     @State private var showingDeleteAlert = false
     @State private var showingEditView = false
     @State private var isGeneratingPDF = false
@@ -107,7 +108,11 @@ struct RentalContractDetailView: View {
                             }
                             
                             Button {
-                                generatePDF()
+                                if freemiumService.hasAccess(to: .pdfExport) {
+                                    generatePDF()
+                                } else {
+                                    freemiumService.requestUpgrade(for: .pdfExport)
+                                }
                             } label: {
                                 Label(L(("Générer PDF", "Generate PDF")), systemImage: "doc.fill")
                             }
@@ -139,6 +144,13 @@ struct RentalContractDetailView: View {
             }
             .sheet(isPresented: $showingCompleteContractView) {
                 CompletePrefilledContractViewLocal(contract: contract, vehicle: vehicle)
+            }
+            .sheet(isPresented: $freemiumService.showUpgradeAlert) {
+                if let blockedFeature = freemiumService.blockedFeature {
+                    NavigationView {
+                        PremiumUpgradeAlert(feature: blockedFeature)
+                    }
+                }
             }
         }
     }
@@ -444,7 +456,11 @@ struct RentalContractDetailView: View {
                 // Boutons secondaires
                 HStack(spacing: 16) {
                     Button {
-                        generatePDF()
+                        if freemiumService.hasAccess(to: .pdfExport) {
+                            generatePDF()
+                        } else {
+                            freemiumService.requestUpgrade(for: .pdfExport)
+                        }
                     } label: {
                         HStack {
                             Image(systemName: "doc.fill")

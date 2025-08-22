@@ -134,7 +134,7 @@ struct VehicleDetailView: View {
                     }
                     
                     HStack(spacing: 12) {
-                        Label("\(Int(vehicle.mileage).formatted()) km", systemImage: "speedometer")
+                        Label("\(Int(vehicle.mileage).formatted(.number.locale(Locale(identifier: "fr_FR")))) km", systemImage: "speedometer")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
@@ -201,22 +201,11 @@ struct VehicleDetailView: View {
     // MARK: - Computed Properties
     
     private var vehicleColor: Color {
-        switch vehicle.fuelType {
-        case .gasoline: return .blue
-        case .diesel: return .orange
-        case .electric: return .green
-        case .hybrid: return .purple
-        case .lpg: return .yellow
-        }
+        return vehicle.fuelType.color
     }
     
     private var vehicleIcon: String {
-        switch vehicle.fuelType {
-        case .gasoline, .diesel: return "car.fill"
-        case .electric: return "bolt.car.fill"
-        case .hybrid: return "leaf.fill"
-        case .lpg: return "fuelpump.fill"
-        }
+        return vehicle.fuelType.vehicleIcon
     }
 }
 
@@ -261,7 +250,7 @@ struct VehicleInfoTabView: View {
                         VehicleInfoRow(label: "Plaque d'immatriculation", value: vehicle.licensePlate)
                         VehicleInfoRow(label: "Couleur", value: vehicle.color)
                         VehicleInfoRow(label: "Transmission", value: vehicle.transmission.rawValue)
-                        VehicleInfoRow(label: "Kilométrage", value: "\(Int(vehicle.mileage).formatted()) km")
+                        VehicleInfoRow(label: "Kilométrage", value: "\(Int(vehicle.mileage).formatted(.number.locale(Locale(identifier: "fr_FR")))) km")
                     }
                 }
                 
@@ -270,7 +259,7 @@ struct VehicleInfoTabView: View {
                     VStack(spacing: 12) {
                         VehicleInfoRow(label: "Date d'achat", value: vehicle.purchaseDate.formatted(date: .abbreviated, time: .omitted))
                         VehicleInfoRow(label: "Prix d'achat", value: String(format: "%.2f €", vehicle.purchasePrice))
-                        VehicleInfoRow(label: "Kilométrage à l'achat", value: "\(Int(vehicle.purchaseMileage).formatted()) km")
+                        VehicleInfoRow(label: "Kilométrage à l'achat", value: "\(Int(vehicle.purchaseMileage).formatted(.number.locale(Locale(identifier: "fr_FR")))) km")
                     }
                 }
             }
@@ -429,6 +418,7 @@ struct VehicleExpensesTabView: View {
 struct VehicleRentalTabView: View {
     let vehicle: Vehicle
     private var rentalService: RentalService { RentalService.shared }
+    @ObservedObject private var freemiumService = FreemiumService.shared
     @State private var showingAddRental = false
     @AppStorage("app_language") private var appLanguage = "fr"
     
@@ -505,7 +495,13 @@ struct VehicleRentalTabView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                         
-                        Button(VehicleDetailView.localText("create_contract", language: appLanguage), action: { showingAddRental = true })
+                        Button(VehicleDetailView.localText("create_contract", language: appLanguage), action: { 
+                            if freemiumService.canAddRental(currentCount: vehicleContracts.count) {
+                                showingAddRental = true
+                            } else {
+                                freemiumService.requestUpgrade(for: .rentalModule)
+                            }
+                        })
                             .buttonStyle(.borderedProminent)
                             .tint(.blue)
                     }
@@ -521,6 +517,13 @@ struct VehicleRentalTabView: View {
         .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $showingAddRental) {
             AddRentalContractView(vehicle: vehicle)
+        }
+        .sheet(isPresented: $freemiumService.showUpgradeAlert) {
+            if let blockedFeature = freemiumService.blockedFeature {
+                NavigationView {
+                    PremiumUpgradeAlert(feature: blockedFeature)
+                }
+            }
         }
     }
     
@@ -810,14 +813,7 @@ private struct VehicleDetailPlaceholder: View {
     let vehicle: Vehicle
     
     private var vehicleIcon: String {
-        switch vehicle.fuelType {
-        case .electric:
-            return "bolt.car"
-        case .hybrid:
-            return "leaf.circle"
-        default:
-            return "car"
-        }
+        return vehicle.fuelType.vehicleIcon
     }
     
     private var gradientColors: [Color] {
