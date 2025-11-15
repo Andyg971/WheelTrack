@@ -137,15 +137,17 @@ WheelTrack/Secrets.plist
 *.secrets.plist
 *secrets*.plist
 
-# Clés API et tokens
+# Clés API et tokens (mais pas les fichiers de documentation)
 *api_key*
 *API_KEY*
-*secret*
-*SECRET*
+*secret*.plist
+*SECRET*.plist
 *token*
 *TOKEN*
 *.key
 *.keys
+!SECRETS_README.md
+!**/SECRETS_README.md
 
 # Fichiers de configuration sensibles
 .env
