@@ -209,8 +209,18 @@ public struct GaragesView: View {
                         garage: garage,
                         isFavorite: favoriteGarages.contains(garage.id.uuidString),
                         onToggleFavorite: { _ in toggleFavorite(garage) },
-                        userLocation: locationService.currentLocation?.coordinate
+                        userLocation: locationService.currentLocation?.coordinate,
+                        onLoadHours: {
+                            _ = await viewModel.fetchHours(for: garage)
+                        }
                     )
+                }
+                
+                // Attribution Google Places (obligatoire pour conformité API)
+                if !displayedGarages.isEmpty && !showOnlyFavorites {
+                    GooglePlacesAttributionView()
+                        .padding(.top, 20)
+                        .padding(.bottom, 10)
                 }
             }
             .padding(.horizontal, 20)
@@ -400,6 +410,7 @@ struct ModernGarageCard: View {
     let isFavorite: Bool
     let onToggleFavorite: (Garage) -> Void
     let userLocation: CLLocationCoordinate2D?
+    let onLoadHours: () async -> Void
     // ✅ Migration vers système centralisé - @EnvironmentObject utilisé
     
     // Calcul de la distance
@@ -458,7 +469,13 @@ struct ModernGarageCard: View {
             VStack(spacing: 12) {
                 ClickableAddressRow(garage: garage)
                 ClickablePhoneRow(phoneNumber: garage.telephone)
-                GarageInfoRow(icon: "clock.fill", title: L(CommonTranslations.hours), value: garage.horaires, color: .orange)
+                OnDemandHoursRow(
+                    icon: "clock.fill",
+                    title: L(CommonTranslations.hours),
+                    value: garage.horaires,
+                    color: .orange,
+                    onLoad: onLoadHours
+                )
                 
                 // Services disponibles
                 if !garage.services.isEmpty {
@@ -493,6 +510,75 @@ struct GarageInfoRow: View {
                 Text(value)
                     .font(.subheadline)
                     .foregroundColor(.primary)
+            }
+            
+            Spacer()
+        }
+    }
+}
+
+// MARK: - On Demand Hours Row
+struct OnDemandHoursRow: View {
+    let icon: String
+    let title: String
+    let value: String
+    let color: Color
+    let onLoad: () async -> Void
+    
+    @State private var isLoading = false
+    
+    private var needsFetch: Bool {
+        value == L(("Chargement des horaires...", "Loading hours...")) ||
+        value == L(("Horaires non disponibles", "Hours not available"))
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(color)
+                .frame(width: 20)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                if needsFetch {
+                    if isLoading {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text(L(("Récupération...", "Fetching...")))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        Button {
+                            isLoading = true
+                            Task {
+                                await onLoad()
+                                isLoading = false
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock.arrow.circlepath")
+                                    .font(.caption)
+                                Text(L(("Afficher les horaires", "Show hours")))
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(color)
+                            .clipShape(Capsule())
+                        }
+                    }
+                } else {
+                    Text(value)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                }
             }
             
             Spacer()
@@ -675,7 +761,7 @@ struct EmptyFavoritesMessageView: View {
             Button(L(CommonTranslations.viewAllGarages)) {
                 onShowAllGarages()
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(PrimaryButtonStyle())
         }
         .padding(32)
         .background(Color(.systemBackground))
@@ -718,12 +804,12 @@ struct EmptyGaragesView: View {
                 Button(L(CommonTranslations.refresh)) {
                     onRefreshNearby()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PrimaryButtonStyle())
             } else {
                 Button(L(CommonTranslations.authorizeGeolocation)) {
                     onRequestLocation()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PrimaryButtonStyle())
             }
         }
         .padding(32)
@@ -763,12 +849,12 @@ struct LocationPermissionBanner: View {
                 Button(L(CommonTranslations.authorize)) {
                     onRequestPermission()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(BorderedButtonStyle())
                 
                 Button(L(CommonTranslations.settings)) {
                     onOpenSettings()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PrimaryButtonStyle())
                 
                 Spacer()
             }
@@ -872,6 +958,40 @@ struct ClickableAddressRow: View {
         } else {
             print("❌ Impossible d'ouvrir Apple Maps")
         }
+    }
+}
+
+// MARK: - Google Places Attribution
+struct GooglePlacesAttributionView: View {
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            // Texte "powered by"
+            Text("powered by")
+                .font(.system(size: 10))
+                .foregroundColor(colorScheme == .dark ? Color(white: 0.7) : Color(white: 0.4))
+            
+            // Logo Google avec les couleurs officielles
+            HStack(spacing: 0) {
+                Text("G")
+                    .foregroundColor(Color(red: 66/255, green: 133/255, blue: 244/255)) // Bleu Google
+                Text("o")
+                    .foregroundColor(Color(red: 234/255, green: 67/255, blue: 53/255)) // Rouge Google
+                Text("o")
+                    .foregroundColor(Color(red: 251/255, green: 188/255, blue: 5/255)) // Jaune Google
+                Text("g")
+                    .foregroundColor(Color(red: 66/255, green: 133/255, blue: 244/255)) // Bleu Google
+                Text("l")
+                    .foregroundColor(Color(red: 52/255, green: 168/255, blue: 83/255)) // Vert Google
+                Text("e")
+                    .foregroundColor(Color(red: 234/255, green: 67/255, blue: 53/255)) // Rouge Google
+            }
+            .font(.system(size: 13, weight: .medium))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .accessibilityLabel("Powered by Google")
     }
 }
 

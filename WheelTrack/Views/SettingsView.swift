@@ -9,12 +9,9 @@ public struct SettingsView: View {
     @AppStorage("app_language") private var appLanguage: String = "fr"
     @State private var showingAbout = false
     @State private var showingPrivacy = false
-    @State private var showingTerms = false
     @State private var showingNotifications = false
     @State private var showingPremium = false
-    @State private var showingTestPurchasePopups = false
-    @State private var showingTestPremiumFlow = false
-    @State private var showingStoreKitTest = false
+
 
     
     @EnvironmentObject private var appleSignInService: AppleSignInService
@@ -215,68 +212,7 @@ public struct SettingsView: View {
                     .accessibilityLabel("WheelTrack Premium")
                     .accessibilityHint("Gérer votre abonnement Premium")
                 }
-                
-                // Section de développement/test (à masquer en production)
-                #if DEBUG
-                Section("🛠️ Développement") {
-                    Button(action: { showingTestPurchasePopups = true }) {
-                        HStack {
-                            Image(systemName: "testtube.2")
-                                .foregroundColor(.orange)
-                                .frame(width: 24, height: 24)
-                            
-                            Text("Test Pop-ups d'Achat")
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    Button(action: { showingTestPremiumFlow = true }) {
-                        HStack {
-                            Image(systemName: "crown.circle")
-                                .foregroundColor(.purple)
-                                .frame(width: 24, height: 24)
-                            
-                            Text("Test Flux Premium")
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    Button(action: { showingStoreKitTest = true }) {
-                        HStack {
-                            Image(systemName: "cart.circle")
-                                .foregroundColor(.green)
-                                .frame(width: 24, height: 24)
-                            
-                            Text("Test StoreKit")
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                #endif
+
             }
             .navigationTitle("Réglages")
             .navigationBarTitleDisplayMode(.large)
@@ -284,7 +220,7 @@ public struct SettingsView: View {
                 SimpleAboutView(language: appLanguage)
             }
             .sheet(isPresented: $showingPrivacy) {
-                SimplePrivacyView(language: appLanguage)
+                PrivacyPolicyView(language: appLanguage)
             }
             .sheet(isPresented: $showingNotifications) {
                 NotificationSettingsView(language: appLanguage)
@@ -292,15 +228,7 @@ public struct SettingsView: View {
             .sheet(isPresented: $showingPremium) {
                 PremiumUpgradeView()
             }
-            .sheet(isPresented: $showingTestPurchasePopups) {
-                TestPurchasePopupsSheet()
-            }
-            .sheet(isPresented: $showingTestPremiumFlow) {
-                TestPremiumFlowSheet()
-            }
-            .sheet(isPresented: $showingStoreKitTest) {
-                StoreKitTestView()
-            }
+
         }
         .accessibilityIdentifier("SettingsView")
     }
@@ -322,6 +250,8 @@ public struct SettingsView: View {
 struct SimpleAboutView: View {
     let language: String
     @Environment(\.dismiss) private var dismiss
+    @State private var showingPrivacyPolicy = false
+    @State private var showingTermsOfService = false
     
     // MARK: - Localization
     private static func localText(_ key: String, _ language: String) -> String {
@@ -463,7 +393,7 @@ struct SimpleAboutView: View {
                 // Support
                 Section(localText("support")) {
                     Button(localText("contact_us")) {
-                        if let url = URL(string: "mailto:support@wheeltrack.app") {
+                        if let url = URL(string: "mailto:support@wheeltrack.fr") {
                             UIApplication.shared.open(url)
                         }
                     }
@@ -472,18 +402,13 @@ struct SimpleAboutView: View {
                 // Legal
                 Section(localText("legal_info")) {
                     Button(localText("privacy_policy")) {
-                        // Fermer About et ouvrir Privacy
-                        dismiss()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            // Cette approche simple évite les problèmes de navigation complexe
-                        }
+                        showingPrivacyPolicy = true
                     }
                     
+                    // On redirige vers l’EULA Apple recommandé
                     Button(localText("terms")) {
-                        // Fermer About et ouvrir Terms
-                        dismiss()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            // Cette approche simple évite les problèmes de navigation complexe
+                        if let url = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/") {
+                            UIApplication.shared.open(url)
                         }
                     }
                     
@@ -499,6 +424,10 @@ struct SimpleAboutView: View {
                     Button(localText("close")) { dismiss() }
                 }
             }
+            .sheet(isPresented: $showingPrivacyPolicy) {
+                PrivacyPolicyView(language: language)
+            }
+            // Plus de feuille pour les conditions: on ouvre l’EULA Apple dans Safari
         }
     }
 }
@@ -1077,113 +1006,7 @@ struct TemporaryGeneralSettingsView: View {
     }
 }
 
-// MARK: - Test Views
 
-/// Vue de test simple pour les pop-ups d'achat
-private struct TestPurchasePopupsSheet: View {
-    @StateObject private var freemiumService = FreemiumService.shared
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "testtube.2")
-                    .font(.system(size: 60))
-                    .foregroundColor(.orange)
-                
-                Text("Test Pop-ups d'Achat")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Text("Testez les différentes pop-ups de confirmation d'achat")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                
-                VStack(spacing: 12) {
-                    Button("Test Achat Mensuel") {
-                        freemiumService.showPurchaseSuccessPopup(purchaseType: .monthly, productID: "monthly")
-                        dismiss()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Button("Test Achat Annuel") {
-                        freemiumService.showPurchaseSuccessPopup(purchaseType: .yearly, productID: "yearly")
-                        dismiss()
-                    }
-                    .buttonStyle(.bordered)
-                    
-                    Button("Test Achat à Vie") {
-                        freemiumService.showPurchaseSuccessPopup(purchaseType: .lifetime, productID: "lifetime")
-                        dismiss()
-                    }
-                    .buttonStyle(.bordered)
-                }
-                
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("Test Pop-ups")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fermer") { dismiss() }
-                }
-            }
-        }
-    }
-}
-
-/// Vue de test simple pour le flux Premium
-private struct TestPremiumFlowSheet: View {
-    @StateObject private var freemiumService = FreemiumService.shared
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "crown.circle")
-                    .font(.system(size: 60))
-                    .foregroundColor(.purple)
-                
-                Text("Test Flux Premium")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Text("État actuel: \(freemiumService.isPremium ? "Premium" : "Gratuit")")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                VStack(spacing: 12) {
-                    Button("Activer Premium Test") {
-                        freemiumService.activatePremium(purchaseType: .test)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Button("Désactiver Premium") {
-                        freemiumService.deactivatePremium()
-                    }
-                    .buttonStyle(.bordered)
-                    
-                    Button("Ouvrir Vue d'Achat") {
-                        dismiss()
-                    }
-                    .buttonStyle(.bordered)
-                }
-                
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("Test Premium")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fermer") { dismiss() }
-                }
-            }
-        }
-    }
-}
 
 #Preview("Settings") {
     SettingsView()

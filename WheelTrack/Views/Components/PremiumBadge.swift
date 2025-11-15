@@ -4,6 +4,7 @@ import SwiftUI
 struct PremiumBadge: View {
     let size: BadgeSize
     let showText: Bool
+    @ObservedObject private var localizationService = LocalizationService.shared
     
     enum BadgeSize {
         case small, medium, large
@@ -45,7 +46,7 @@ struct PremiumBadge: View {
                 .foregroundColor(.yellow)
             
             if showText {
-                Text("PREMIUM")
+                Text(L(CommonTranslations.premiumBadge).uppercased())
                     .font(size.fontSize)
                     .fontWeight(.bold)
                     .foregroundColor(.orange)
@@ -67,6 +68,7 @@ struct PremiumBadge: View {
 /// Badge Lock pour les fonctionnalités verrouillées
 struct LockedFeatureBadge: View {
     let onTap: () -> Void
+    @ObservedObject private var localizationService = LocalizationService.shared
     
     var body: some View {
         Button(action: onTap) {
@@ -97,6 +99,7 @@ struct LockedFeatureBadge: View {
 struct PremiumOverlay: View {
     let feature: FreemiumService.PremiumFeature
     @ObservedObject private var freemiumService = FreemiumService.shared
+    @ObservedObject private var localizationService = LocalizationService.shared
     @State private var showUpgradeAlert = false
     
     var body: some View {
@@ -121,7 +124,7 @@ struct PremiumOverlay: View {
                         .fontWeight(.semibold)
                         .multilineTextAlignment(.center)
                     
-                    Text("Disponible avec Premium")
+                    Text(L(CommonTranslations.availableWithPremium))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -131,7 +134,7 @@ struct PremiumOverlay: View {
                     } label: {
                         HStack {
                             Image(systemName: "crown.fill")
-                            Text("Débloquer")
+                            Text(L(CommonTranslations.unlock))
                         }
                         .font(.headline)
                         .foregroundColor(.white)

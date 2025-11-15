@@ -20,7 +20,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "wheeltrack_premium_monthly",
+      "productID" : "com.andygrava.wheeltrack.premium.monthly",
       "referenceName" : "Premium Monthly",
       "type" : "AutoRenewable"
     },
@@ -40,12 +40,12 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "wheeltrack_premium_yearly",
+      "productID" : "com.andygrava.wheeltrack.premium.yearly",
       "referenceName" : "Premium Yearly",
       "type" : "AutoRenewable"
     },
     {
-      "displayPrice" : "19.99",
+      "displayPrice" : "79.99",
       "familyShareable" : false,
       "internalID" : "6502148303",
       "localizations" : [
@@ -60,7 +60,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "wheeltrack_premium_lifetime",
+      "productID" : "com.andygrava.wheeltrack.premium.lifetime",
       "referenceName" : "Premium Lifetime",
       "type" : "NonConsumable"
     }
@@ -130,7 +130,7 @@
           "locale" : "fr"
         },
         {
-          "description" : "WheelTrack Premium Subscriptions", 
+          "description" : "WheelTrack Premium Subscriptions",
           "displayName" : "WheelTrack Premium",
           "locale" : "en_US"
         }
@@ -161,7 +161,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "wheeltrack_premium_monthly",
+          "productID" : "com.andygrava.wheeltrack.premium.monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Premium Monthly",
           "subscriptionGroupID" : "21451234",
@@ -191,7 +191,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "wheeltrack_premium_yearly",
+          "productID" : "com.andygrava.wheeltrack.premium.yearly",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Premium Yearly",
           "subscriptionGroupID" : "21451234",
@@ -205,3 +205,4 @@
     "minor" : 0
   }
 }
+

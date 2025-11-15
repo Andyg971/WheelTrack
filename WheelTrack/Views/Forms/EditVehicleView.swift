@@ -104,9 +104,9 @@ struct EditVehicleView: View {
                 Section {
                     VehiclePhotoEditSection(vehicle: $editableVehicle)
                 } header: {
-                    Text(appLanguage == "en" ? "Photos & Documents" : "Photos et Documents")
+                    Text(appLanguage == "en" ? "Photo" : "Photo")
                 } footer: {
-                    Text(appLanguage == "en" ? "Manage photos of your vehicle and important documents" : "Gérez les photos de votre véhicule et les documents importants")
+                    Text(appLanguage == "en" ? "Manage the photo of your vehicle" : "Gérez la photo de votre véhicule")
                 }
             }
             .navigationTitle(EditVehicleView.localText("edit_vehicle", language: appLanguage))
@@ -183,184 +183,69 @@ struct EditVehicleView: View {
 }
 
 // MARK: - Vehicle Photo Edit Section (Version pour édition)
+
+// MARK: - Vehicle Photo Edit Section (ULTRA-SIMPLIFIÉ - Photo uniquement)
 struct VehiclePhotoEditSection: View {
     @Binding var vehicle: Vehicle
-    @State private var imageManager = VehicleImageManager()
+    private let imageManager = ImageManager.shared
     @State private var showingPhotoPicker = false
-    @State private var selectedImages: [UIImage] = []
-    @State private var photoPickerType: PhotoPickerType = .main
     @AppStorage("app_language") private var appLanguage = "fr"
     
-    // États pour l'affichage
+    // État pour l'affichage (1 seule photo)
     @State private var mainImage: UIImage?
-    @State private var additionalImages: [UIImage] = []
-    @State private var documentImages: [UIImage] = []
     
     var body: some View {
-        VStack(spacing: 20) {
-            // MARK: - Photo principale
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label(appLanguage == "en" ? "Main Photo" : "Photo principale", systemImage: "camera")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        photoPickerType = .main
-                        showingPhotoPicker = true
-                    }) {
-                        Image(systemName: mainImage == nil ? "plus.circle.fill" : "pencil.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                    }
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label(appLanguage == "en" ? "Photo" : "Photo", systemImage: "camera")
+                    .font(.headline)
+                    .foregroundColor(.primary)
                 
-                // Affichage de la photo principale
-                if let mainImage = mainImage {
-                    ZStack(alignment: .topTrailing) {
-                        Image(uiImage: mainImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 200)
-                            .clipped()
-                            .cornerRadius(12)
-                        
-                        Button(action: deleteMainImage) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
-                                .background(Color.white, in: Circle())
-                                .font(.title2)
-                        }
-                        .padding(8)
-                    }
-                } else {
-                    // Placeholder pour photo principale
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(.systemGray5))
+                Spacer()
+                
+                Button(action: {
+                    showingPhotoPicker = true
+                }) {
+                    Image(systemName: mainImage == nil ? "plus.circle.fill" : "pencil.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            if let mainImage = mainImage {
+                ZStack(alignment: .topTrailing) {
+                    Image(uiImage: mainImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
                         .frame(height: 200)
-                        .overlay(
-                            VStack {
-                                Image(systemName: "camera.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.gray)
-                                Text(appLanguage == "en" ? "Add main photo" : "Ajouter une photo principale")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                        )
-                        .onTapGesture {
-                            photoPickerType = .main
-                            showingPhotoPicker = true
-                        }
-                }
-            }
-            
-            // MARK: - Photos supplémentaires
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label(appLanguage == "en" ? "Additional Photos" : "Photos supplémentaires", systemImage: "photo.on.rectangle")
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                        .clipped()
+                        .cornerRadius(12)
                     
-                    Spacer()
-                    
-                    Button(action: {
-                        photoPickerType = .additional
-                        showingPhotoPicker = true
-                    }) {
-                        Image(systemName: "plus.circle.fill")
+                    Button(action: deletePhoto) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                            .background(Color.white, in: Circle())
                             .font(.title2)
-                            .foregroundColor(.blue)
                     }
+                    .padding(8)
                 }
-                
-                if !additionalImages.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(additionalImages.enumerated()), id: \.offset) { index, image in
-                                ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 120, height: 90)
-                                        .clipped()
-                                        .cornerRadius(8)
-                                    
-                                    Button(action: { deleteAdditionalImage(at: index) }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.red)
-                                            .background(Color.white, in: Circle())
-                                            .font(.caption)
-                                    }
-                                    .padding(4)
-                                }
-                            }
+            } else {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray5))
+                    .frame(height: 200)
+                    .overlay(
+                        VStack {
+                            Image(systemName: "camera.fill")
+                                .font(.largeTitle)
+                                .foregroundColor(.gray)
+                            Text(appLanguage == "en" ? "Add photo" : "Ajouter une photo")
+                                .font(.caption)
+                                .foregroundColor(.gray)
                         }
-                        .padding(.horizontal)
-                    }
-                } else {
-                    Text(appLanguage == "en" ? "No additional photos" : "Aucune photo supplémentaire")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
-                }
-            }
-            
-            // MARK: - Documents
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label(appLanguage == "en" ? "Documents" : "Documents", systemImage: "doc.fill")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        photoPickerType = .documents
+                    )
+                    .onTapGesture {
                         showingPhotoPicker = true
-                    }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
                     }
-                }
-                
-                if !documentImages.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(documentImages.enumerated()), id: \.offset) { index, image in
-                                ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 120, height: 90)
-                                        .clipped()
-                                        .cornerRadius(8)
-                                    
-                                    Button(action: { deleteDocumentImage(at: index) }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.red)
-                                            .background(Color.white, in: Circle())
-                                            .font(.caption)
-                                    }
-                                    .padding(4)
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                } else {
-                    Text(appLanguage == "en" ? "No documents" : "Aucun document")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
-                }
             }
         }
         .onAppear {
@@ -369,98 +254,46 @@ struct VehiclePhotoEditSection: View {
         }
         .sheet(isPresented: $showingPhotoPicker) {
             PhotoPickerWrapper(
-                selectedImages: $selectedImages,
-                allowsMultipleSelection: photoPickerType != .main,
-                maxSelectionCount: photoPickerType == .main ? 1 : 5
-            )
-        }
-        .onChange(of: selectedImages) { _, newImages in
-            handleSelectedImages(newImages)
+                allowsMultipleSelection: false,
+                maxSelectionCount: 1
+            ) { images in
+                handlePhoto(images)
+            }
         }
     }
     
-    // MARK: - Fonctions de gestion des images
+    // MARK: - Fonctions
     private func loadExistingImages() {
         if let mainImageURL = vehicle.mainImageURL {
-            mainImage = imageManager.loadImage(fileName: mainImageURL)
-        }
-        
-        additionalImages = vehicle.additionalImagesURLs.compactMap { fileName in
-            imageManager.loadImage(fileName: fileName)
-        }
-        
-        documentImages = vehicle.documentsImageURLs.compactMap { fileName in
-            imageManager.loadImage(fileName: fileName)
+            mainImage = imageManager.loadImage(fileName: mainImageURL, from: .vehicleMainPhoto)
         }
     }
     
-    private func handleSelectedImages(_ images: [UIImage]) {
-        guard !images.isEmpty else { return }
+    private func handlePhoto(_ images: [UIImage]) {
+        guard let image = images.first else { return }
         
-        switch photoPickerType {
-        case .main:
-            if let image = images.first {
-                mainImage = imageManager.compressImage(image, maxSizeKB: 800)
-                // Sauvegarder et mettre à jour le véhicule
-                if let fileName = imageManager.saveImage(image) {
-                    vehicle.mainImageURL = fileName
-                }
-            }
-            
-        case .additional:
-            for image in images {
-                if let compressedImage = imageManager.compressImage(image, maxSizeKB: 500) {
-                    additionalImages.append(compressedImage)
-                    // Sauvegarder et mettre à jour le véhicule
-                    if let fileName = imageManager.saveImage(compressedImage) {
-                        vehicle.additionalImagesURLs.append(fileName)
-                    }
-                }
-            }
-            
-        case .documents:
-            for image in images {
-                if let compressedImage = imageManager.compressImage(image, maxSizeKB: 500) {
-                    documentImages.append(compressedImage)
-                    // Sauvegarder et mettre à jour le véhicule
-                    if let fileName = imageManager.saveImage(compressedImage) {
-                        vehicle.documentsImageURLs.append(fileName)
-                    }
-                }
-            }
+        // Supprimer l'ancienne photo si elle existe
+        if let oldImageURL = vehicle.mainImageURL {
+            _ = imageManager.deleteImage(fileName: oldImageURL, from: .vehicleMainPhoto)
         }
         
-        selectedImages = []
+        // Sauvegarder la nouvelle photo
+        if let compressedImage = imageManager.compressImage(image, maxSizeKB: 800),
+           let fileName = imageManager.saveImage(compressedImage, to: .vehicleMainPhoto) {
+            vehicle.mainImageURL = fileName
+            mainImage = compressedImage
+        }
     }
     
-    private func deleteMainImage() {
+    private func deletePhoto() {
         if let imageURL = vehicle.mainImageURL {
-            let _ = imageManager.deleteImage(fileName: imageURL)
+            _ = imageManager.deleteImage(fileName: imageURL, from: .vehicleMainPhoto)
         }
         mainImage = nil
         vehicle.mainImageURL = nil
     }
-    
-    private func deleteAdditionalImage(at index: Int) {
-        guard index < vehicle.additionalImagesURLs.count else { return }
-        
-        let fileName = vehicle.additionalImagesURLs[index]
-        let _ = imageManager.deleteImage(fileName: fileName)
-        
-        additionalImages.remove(at: index)
-        vehicle.additionalImagesURLs.remove(at: index)
-    }
-    
-    private func deleteDocumentImage(at index: Int) {
-        guard index < vehicle.documentsImageURLs.count else { return }
-        
-        let fileName = vehicle.documentsImageURLs[index]
-        let _ = imageManager.deleteImage(fileName: fileName)
-        
-        documentImages.remove(at: index)
-        vehicle.documentsImageURLs.remove(at: index)
-    }
 }
+
 
 #Preview {
     EditVehicleView(vehicle: Vehicle(brand: "Toyota", model: "Corolla", year: 2020, licensePlate: "AB-123-CD", mileage: 50000, fuelType: .diesel, transmission: .manual, color: "Gris", purchaseDate: Date(), purchasePrice: 18000, purchaseMileage: 0)) { _ in }

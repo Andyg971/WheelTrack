@@ -1,4 +1,4 @@
-import SwiftUI
+ import SwiftUI
 
 /// Bouton animé réutilisable (rebond au clic)
 struct AnimatedButton: View {

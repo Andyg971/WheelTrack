@@ -68,7 +68,7 @@ struct VehicleImageView: View {
             return
         }
         
-        loadedImage = imageManager.loadImage(fileName: imageURL, from: .vehicle)
+        loadedImage = imageManager.loadImage(fileName: imageURL, from: .vehicleMainPhoto)
     }
 }
 

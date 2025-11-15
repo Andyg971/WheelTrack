@@ -11,6 +11,9 @@ struct RentalContractDetailView: View {
     @State private var showingEditView = false
     @State private var isGeneratingPDF = false
     @State private var showingCompleteContractView = false
+    @State private var pdfDataToShare: Data?
+    @State private var showingShareSheet = false
+    @State private var textToShare: String?
     @AppStorage("app_language") private var appLanguage = "fr"
     
     // Détermine si c'est un contrat prérempli
@@ -88,6 +91,32 @@ struct RentalContractDetailView: View {
                     }
                     .padding(.vertical, 16)
                 }
+                
+                // Overlay de chargement pour la génération du PDF
+                if isGeneratingPDF {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.blue)
+                        
+                        Text(L(("Génération du PDF...", "Generating PDF...")))
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text(L(("Veuillez patienter", "Please wait")))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+                    )
+                }
             }
             .navigationTitle(isPrefilledContract ? L(("Contrat à compléter", "Contract to complete")) : L(("Détails du contrat", "Contract details")))
             .navigationBarTitleDisplayMode(.inline)
@@ -150,6 +179,13 @@ struct RentalContractDetailView: View {
                     NavigationView {
                         PremiumUpgradeAlert(feature: blockedFeature)
                     }
+                }
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                if let pdfData = pdfDataToShare {
+                    ShareSheetView(activityItems: [savePDFToTemp(data: pdfData)])
+                } else if let text = textToShare {
+                    ShareSheetView(activityItems: [text])
                 }
             }
         }
@@ -431,7 +467,7 @@ struct RentalContractDetailView: View {
                 // Bouton principal selon le statut
                 if contract.isActive() {
                     Button {
-                        // Action pour contrat actif (ex: finaliser)
+                        finalizeRental()
                     } label: {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
@@ -502,6 +538,11 @@ struct RentalContractDetailView: View {
         dismiss()
     }
     
+    private func finalizeRental() {
+        // Fermer la vue de détail du contrat
+        dismiss()
+    }
+    
     private func generatePDF() {
         // Ne générer le PDF que si le contrat est complété
         guard !isPrefilledContract else { return }
@@ -509,109 +550,238 @@ struct RentalContractDetailView: View {
         isGeneratingPDF = true
         
         // Créer le PDF
-        let pdfData = createPDFData()
-        
-        // Sauvegarder et partager
-        if let data = pdfData {
-            sharePDF(data: data)
+        if let pdfData = createPDFData() {
+            // Stocker les données du PDF et afficher la feuille de partage
+            self.pdfDataToShare = pdfData
+            self.textToShare = nil
+            self.showingShareSheet = true
         }
         
         isGeneratingPDF = false
     }
     
+    // Fonction helper pour sauvegarder le PDF dans un fichier temporaire
+    private func savePDFToTemp(data: Data) -> URL {
+        let fileName = "Contrat_\(contract.renterName.replacingOccurrences(of: " ", with: "_"))_\(formatDateForFileName(contract.startDate)).pdf"
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        
+        do {
+            try data.write(to: tempURL)
+        } catch {
+            print("❌ Erreur lors de la sauvegarde du PDF: \(error.localizedDescription)")
+        }
+        
+        return tempURL
+    }
+    
+    // Formater la date pour le nom de fichier
+    private func formatDateForFileName(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd"
+        return formatter.string(from: date)
+    }
+    
     private func createPDFData() -> Data? {
-        let pdfRenderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595, height: 842)) // A4
+        // Format A4 : 595 x 842 points
+        let pdfRenderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595, height: 842))
         
         return pdfRenderer.pdfData { context in
             context.beginPage()
             
-            let title = L(("CONTRAT DE LOCATION", "RENTAL CONTRACT")).uppercased()
+            // ==================== STYLES ====================
             let titleAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: 24),
-                .foregroundColor: UIColor.black
+                .font: UIFont.boldSystemFont(ofSize: 26),
+                .foregroundColor: UIColor.systemBlue
             ]
-            title.draw(at: CGPoint(x: 50, y: 50), withAttributes: titleAttributes)
+            
+            let sectionTitleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: 14),
+                .foregroundColor: UIColor.darkGray
+            ]
             
             let normalAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 12),
+                .font: UIFont.systemFont(ofSize: 11),
                 .foregroundColor: UIColor.black
             ]
             
             let boldAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: 12),
+                .font: UIFont.boldSystemFont(ofSize: 11),
                 .foregroundColor: UIColor.black
             ]
             
-            var yPosition: CGFloat = 120
-            let lineHeight: CGFloat = 20
+            let totalAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: 16),
+                .foregroundColor: UIColor.systemGreen
+            ]
             
-            // Informations du véhicule
-            L(("VÉHICULE", "VEHICLE")).uppercased().draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
-            yPosition += lineHeight + 10
+            // ==================== EN-TÊTE ====================
+            var yPosition: CGFloat = 40
+            let margin: CGFloat = 50
+            let lineHeight: CGFloat = 18
             
-            "\(L(("Marque et modèle", "Brand and model"))): \(vehicle.brand) \(vehicle.model)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            // Titre principal
+            let title = L(("CONTRAT DE LOCATION", "RENTAL CONTRACT")).uppercased()
+            title.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: titleAttributes)
+            yPosition += 35
+            
+            // Date de génération et ID du contrat
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateStyle = .long
+            dateFormatter.locale = Locale(identifier: appLanguage == "fr" ? "fr_FR" : "en_US")
+            
+            let generationDate = L(("Document généré le", "Document generated on")) + " \(dateFormatter.string(from: Date()))"
+            generationDate.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "\(L(("Immatriculation", "License Plate"))): \(vehicle.licensePlate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            let contractId = L(("ID du contrat", "Contract ID")) + ": \(contract.id.uuidString.prefix(8).uppercased())"
+            contractId.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: normalAttributes)
+            yPosition += 30
+            
+            // Ligne de séparation
+            let separatorPath = UIBezierPath()
+            separatorPath.move(to: CGPoint(x: margin, y: yPosition))
+            separatorPath.addLine(to: CGPoint(x: 595 - margin, y: yPosition))
+            UIColor.systemGray4.setStroke()
+            separatorPath.lineWidth = 1
+            separatorPath.stroke()
+            yPosition += 25
+            
+            // ==================== SECTION VÉHICULE ====================
+            L(("VÉHICULE", "VEHICLE")).uppercased().draw(at: CGPoint(x: margin, y: yPosition), withAttributes: sectionTitleAttributes)
+            yPosition += lineHeight + 8
+            
+            // Rectangle de fond pour la section
+            let vehicleRect = CGRect(x: margin, y: yPosition, width: 495, height: 90)
+            UIColor.systemGray6.setFill()
+            UIBezierPath(roundedRect: vehicleRect, cornerRadius: 8).fill()
+            
+            yPosition += 10
+            
+            "\(L(("Marque et modèle", "Brand and model"))): \(vehicle.brand) \(vehicle.model)".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: boldAttributes)
             yPosition += lineHeight
             
-            "\(L(("Année", "Year"))): \(String(vehicle.year))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Immatriculation", "License Plate"))): \(vehicle.licensePlate)".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "\(L(("Couleur", "Color"))): \(vehicle.color)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
-            yPosition += lineHeight + 20
-            
-            // Informations du locataire
-            L(("LOCATAIRE", "RENTER")).uppercased().draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
-            yPosition += lineHeight + 10
-            
-            "\(L(("Nom", "Name"))): \(contract.renterName)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
-            yPosition += lineHeight + 20
-            
-            // Période et tarification
-            L(("PÉRIODE DE LOCATION", "RENTAL PERIOD")).uppercased().draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
-            yPosition += lineHeight + 10
-            
-            "\(L(("Date de début", "Start date"))): \(formattedStartDate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Année", "Year"))): \(String(vehicle.year))  •  \(L(("Couleur", "Color"))): \(vehicle.color)".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "\(L(("Date de fin", "End date"))): \(formattedEndDate)".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            let fuelTypeStr = L(("Carburant", "Fuel"))+": \(vehicle.fuelType.rawValue)  •  \(L(("Transmission", "Transmission"))): \(vehicle.transmission.rawValue)"
+            fuelTypeStr.draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "\(L(("Durée", "Duration"))): \(contract.numberOfDays) \(L((contract.numberOfDays > 1 ? "jours" : "jour", contract.numberOfDays > 1 ? "days" : "day")))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            yPosition += 20
+            
+            // ==================== SECTION LOCATAIRE ====================
+            L(("LOCATAIRE", "RENTER")).uppercased().draw(at: CGPoint(x: margin, y: yPosition), withAttributes: sectionTitleAttributes)
+            yPosition += lineHeight + 8
+            
+            let renterRect = CGRect(x: margin, y: yPosition, width: 495, height: 35)
+            UIColor.systemBlue.withAlphaComponent(0.05).setFill()
+            UIBezierPath(roundedRect: renterRect, cornerRadius: 8).fill()
+            
+            yPosition += 10
+            
+            "\(L(("Nom complet", "Full name"))): \(contract.renterName)".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: boldAttributes)
+            yPosition += 35
+            
+            // ==================== SECTION PÉRIODE ====================
+            L(("PÉRIODE DE LOCATION", "RENTAL PERIOD")).uppercased().draw(at: CGPoint(x: margin, y: yPosition), withAttributes: sectionTitleAttributes)
+            yPosition += lineHeight + 8
+            
+            let periodRect = CGRect(x: margin, y: yPosition, width: 495, height: 72)
+            UIColor.systemOrange.withAlphaComponent(0.05).setFill()
+            UIBezierPath(roundedRect: periodRect, cornerRadius: 8).fill()
+            
+            yPosition += 10
+            
+            "\(L(("Date de début", "Start date"))): \(formattedStartDate)".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "\(L(("Prix par jour", "Price per day"))): \(String(format: "%.2f €", contract.pricePerDay))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: normalAttributes)
+            "\(L(("Date de fin", "End date"))): \(formattedEndDate)".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: normalAttributes)
             yPosition += lineHeight
             
-            "\(L(("TOTAL", "TOTAL"))): \(String(format: "%.2f €", contract.totalPrice))".draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
-            yPosition += lineHeight + 20
+            "\(L(("Durée totale", "Total duration"))): \(contract.numberOfDays) \(L((contract.numberOfDays > 1 ? "jours" : "jour", contract.numberOfDays > 1 ? "days" : "day")))".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: boldAttributes)
+            yPosition += 32
             
-            // État des lieux
-            L(("ÉTAT DES LIEUX", "CONDITION REPORT")).uppercased().draw(at: CGPoint(x: 50, y: yPosition), withAttributes: boldAttributes)
-            yPosition += lineHeight + 10
+            // ==================== SECTION TARIFICATION ====================
+            L(("TARIFICATION", "PRICING")).uppercased().draw(at: CGPoint(x: margin, y: yPosition), withAttributes: sectionTitleAttributes)
+            yPosition += lineHeight + 8
+            
+            let pricingRect = CGRect(x: margin, y: yPosition, width: 495, height: contract.depositAmount > 0 ? 90 : 72)
+            UIColor.systemGreen.withAlphaComponent(0.05).setFill()
+            UIBezierPath(roundedRect: pricingRect, cornerRadius: 8).fill()
+            
+            yPosition += 10
+            
+            "\(L(("Prix par jour", "Price per day"))): \(String(format: "%.2f €", contract.pricePerDay))".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: normalAttributes)
+            yPosition += lineHeight
+            
+            "\(L(("Nombre de jours", "Number of days"))): \(contract.numberOfDays)".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: normalAttributes)
+            yPosition += lineHeight
+            
+            if contract.depositAmount > 0 {
+                "\(L(("Caution", "Deposit"))): \(String(format: "%.2f €", contract.depositAmount))".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: normalAttributes)
+                yPosition += lineHeight
+            }
+            
+            // Ligne de séparation
+            let priceSeparator = UIBezierPath()
+            priceSeparator.move(to: CGPoint(x: margin + 10, y: yPosition + 2))
+            priceSeparator.addLine(to: CGPoint(x: 495 + margin - 10, y: yPosition + 2))
+            UIColor.systemGray3.setStroke()
+            priceSeparator.lineWidth = 1
+            priceSeparator.stroke()
+            yPosition += 10
+            
+            "\(L(("TOTAL", "TOTAL"))): \(String(format: "%.2f €", contract.totalPrice))".draw(at: CGPoint(x: margin + 10, y: yPosition), withAttributes: totalAttributes)
+            yPosition += 35
+            
+            // ==================== SECTION ÉTAT DES LIEUX ====================
+            L(("ÉTAT DES LIEUX", "CONDITION REPORT")).uppercased().draw(at: CGPoint(x: margin, y: yPosition), withAttributes: sectionTitleAttributes)
+            yPosition += lineHeight + 8
             
             let conditionText = contract.conditionReport.isEmpty ? L(("Non spécifié", "Not specified")) : contract.conditionReport
-            let rect = CGRect(x: 50, y: yPosition, width: 495, height: 200)
-            conditionText.draw(in: rect, withAttributes: normalAttributes)
-        }
-    }
-    
-    private func sharePDF(data: Data) {
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("contrat_\(contract.renterName).pdf")
-        
-        do {
-            try data.write(to: tempURL)
+            let conditionRect = CGRect(x: margin + 10, y: yPosition, width: 475, height: 842 - yPosition - 100)
             
-            let activityViewController = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+            // Dessiner un rectangle de fond
+            let conditionBg = CGRect(x: margin, y: yPosition, width: 495, height: min(150, 842 - yPosition - 80))
+            UIColor.systemPurple.withAlphaComponent(0.05).setFill()
+            UIBezierPath(roundedRect: conditionBg, cornerRadius: 8).fill()
             
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first,
-               let rootViewController = window.rootViewController {
-                rootViewController.present(activityViewController, animated: true)
-            }
-        } catch {
-            print("Erreur lors de la sauvegarde du PDF: \(error)")
+            // Dessiner le texte avec un paragraphe style pour gérer les retours à la ligne
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.lineSpacing = 4
+            paragraphStyle.alignment = .left
+            
+            let conditionAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 10),
+                .foregroundColor: UIColor.black,
+                .paragraphStyle: paragraphStyle
+            ]
+            
+            conditionText.draw(in: conditionRect, withAttributes: conditionAttributes)
+            
+            // ==================== PIED DE PAGE ====================
+            let footerY: CGFloat = 842 - 50
+            
+            let footerSeparator = UIBezierPath()
+            footerSeparator.move(to: CGPoint(x: margin, y: footerY - 10))
+            footerSeparator.addLine(to: CGPoint(x: 595 - margin, y: footerY - 10))
+            UIColor.systemGray4.setStroke()
+            footerSeparator.lineWidth = 1
+            footerSeparator.stroke()
+            
+            let footerAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 9),
+                .foregroundColor: UIColor.systemGray
+            ]
+            
+            L(("Document généré par WheelTrack", "Document generated by WheelTrack")).draw(at: CGPoint(x: margin, y: footerY), withAttributes: footerAttributes)
+            
+            let pageNumber = "1/1"
+            let pageNumberWidth = pageNumber.size(withAttributes: footerAttributes).width
+            pageNumber.draw(at: CGPoint(x: 595 - margin - pageNumberWidth, y: footerY), withAttributes: footerAttributes)
         }
     }
     
@@ -628,13 +798,10 @@ struct RentalContractDetailView: View {
         \(L(("Total", "Total"))): \(String(format: "%.2f €", contract.totalPrice))
         """
         
-        let activityViewController = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootViewController = window.rootViewController {
-            rootViewController.present(activityViewController, animated: true)
-        }
+        // Utiliser le nouveau système de partage
+        self.textToShare = text
+        self.pdfDataToShare = nil
+        self.showingShareSheet = true
     }
 }
 
@@ -680,6 +847,7 @@ struct CompletePrefilledContractViewLocal: View {
     @State private var showingValidationAlert = false
     @State private var validationMessage = ""
     @State private var isLoading = false
+    @State private var showImmediateStartDialog = false
     
     private var isFormValid: Bool {
         !renterName.trimmingCharacters(in: .whitespaces).isEmpty
@@ -792,7 +960,11 @@ struct CompletePrefilledContractViewLocal: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L(("Activer", "Activate"))) {
-                        completeContract()
+                        if contract.startDate > Date() {
+                            showImmediateStartDialog = true
+                        } else {
+                            completeContract()
+                        }
                     }
                     .disabled(!isFormValid || isLoading)
                     .fontWeight(.semibold)
@@ -823,12 +995,25 @@ struct CompletePrefilledContractViewLocal: View {
                     .shadow(radius: 10)
                 }
             }
+            .confirmationDialog(
+                L(CommonTranslations.futureStartDate),
+                isPresented: $showImmediateStartDialog,
+                titleVisibility: .visible
+            ) {
+                Button(L(CommonTranslations.startNow)) {
+                    completeContract(forceStartNow: true)
+                }
+                Button(L(CommonTranslations.keepPlannedDate)) {
+                    completeContract(forceStartNow: false)
+                }
+                Button(L(CommonTranslations.cancel), role: .cancel) { }
+            }
         }
     }
     
     // MARK: - Actions
     
-    private func completeContract() {
+    private func completeContract(forceStartNow: Bool = false) {
         guard isFormValid else { return }
         
         isLoading = true
@@ -838,12 +1023,25 @@ struct CompletePrefilledContractViewLocal: View {
             L(("Véhicule en bon état général. État détaillé à compléter lors de la remise des clés.", "Vehicle in good general condition. Detailed condition to be completed upon key handover.")) : 
             conditionReport
         
+        let now = Date()
+        var adjustedStartDate = contract.startDate
+        var adjustedEndDate = contract.endDate
+        
+        // Forcer l'activation immédiate si demandé et si la date de début est future
+        if forceStartNow && adjustedStartDate > now {
+            adjustedStartDate = now
+            // Sécurité: s'assurer que la fin est après le début
+            if adjustedEndDate <= adjustedStartDate {
+                adjustedEndDate = Calendar.current.date(byAdding: .day, value: 1, to: adjustedStartDate) ?? adjustedStartDate.addingTimeInterval(86_400)
+            }
+        }
+        
         let completedContract = RentalContract(
             id: contract.id,
             vehicleId: contract.vehicleId,
             renterName: renterName.trimmingCharacters(in: .whitespacesAndNewlines),
-            startDate: contract.startDate,
-            endDate: contract.endDate,
+            startDate: adjustedStartDate,
+            endDate: adjustedEndDate,
             pricePerDay: contract.pricePerDay,
             totalPrice: contract.totalPrice,
             conditionReport: updatedConditionReport,
@@ -895,6 +1093,26 @@ struct InfoSummaryRowLocal: View {
                 .fontWeight(.medium)
                 .foregroundColor(.primary)
         }
+    }
+}
+
+// MARK: - ShareSheetView
+
+/// Vue pour afficher la feuille de partage native iOS
+/// Permet de partager des fichiers PDF et du texte via toutes les applications installées
+struct ShareSheetView: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: nil
+        )
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
+        // Pas de mise à jour nécessaire
     }
 }
 

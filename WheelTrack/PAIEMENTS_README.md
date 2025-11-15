@@ -77,8 +77,8 @@ Votre application WheelTrack a maintenant un **système de paiements complet et 
 ## 💰 **Options d'achat**
 
 1. **Premium Mensuel** - 4,99€/mois
-2. **Premium Annuel** - 49,99€/an (économisez 18%)
-3. **Premium à Vie** - 19,99€ (achat unique)
+2. **Premium Annuel** - 49,99€/an (économisez 18%) - Badge "populaire"
+3. **Premium à Vie** - 79,99€ (achat unique) - Badge "premium"
 
 ## 🔍 **Navigation et Accès**
 

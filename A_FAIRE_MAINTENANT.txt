@@ -1,0 +1,52 @@
+═══════════════════════════════════════════════════════════════════════
+  ⚡ À FAIRE MAINTENANT - Test des Achats In-App
+═══════════════════════════════════════════════════════════════════════
+
+📱 ÉTAPE 1 : Lancez votre app
+   Dans Xcode : Cmd + R (Build & Run)
+
+📱 ÉTAPE 2 : Ouvrez la vue de debug
+   App → Réglages → 🔧 Outils de Développement → Debug StoreKit
+
+🔍 ÉTAPE 3 : Testez l'API
+   Cliquez sur le bouton VIOLET "Tester l'API StoreKit"
+
+📊 ÉTAPE 4 : Lisez le résultat
+   Regardez la section "Log de débogage" en bas de l'écran
+
+───────────────────────────────────────────────────────────────────────
+
+✅ SI VOUS VOYEZ "3 produits trouvés" :
+   → Tout fonctionne ! Testez un achat avec le bouton vert.
+
+❌ SI VOUS VOYEZ "0 produits" ou "Aucun produit retourné" :
+   → Faites : Product > Clean Build Folder dans Xcode (Cmd+Shift+K)
+   → Fermez Xcode complètement
+   → Rouvrez Xcode
+   → Relancez l'app
+   → Retestez
+
+───────────────────────────────────────────────────────────────────────
+
+📖 BESOIN D'AIDE ?
+
+Lisez ces fichiers dans cet ordre :
+1. QUICK_START_DEBUG.md        (guide rapide, 3 min)
+2. GUIDE_DEBUG_ACHATS.md        (guide complet, 10 min)
+3. RESUME_DEBUG_ACHATS.md       (résumé technique)
+
+───────────────────────────────────────────────────────────────────────
+
+💬 DITES-MOI CE QUE VOUS VOYEZ !
+
+Après le test, envoyez-moi :
+• Nombre de produits chargés : ___
+• Messages dans le log (copier-coller les 5 dernières lignes)
+• Ce qui se passe quand vous cliquez sur "Tester l'achat"
+
+Je pourrai alors vous aider précisément ! 🎯
+
+═══════════════════════════════════════════════════════════════════════
+  Installation terminée ✅ | Prêt à tester 🚀
+═══════════════════════════════════════════════════════════════════════
+

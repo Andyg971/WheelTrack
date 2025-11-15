@@ -8,10 +8,10 @@ public class AppStoreConfigService {
     // MARK: - Configuration App Store Connect
     
     /// Bundle ID de l'application (doit correspondre à App Store Connect)
-    public let bundleID = "com.wheeltrack.app" // Bundle ID de votre app
+    public let bundleID = "com.Wheel.WheelTrack" // Bundle ID de votre app (correspond à Xcode)
     
     /// Team ID de développeur
-    public let teamID = "VOTRE_TEAM_ID" // Remplacez par votre vrai Team ID d'App Store Connect
+    public let teamID = "5WUC3D8BMJ" // Votre vrai Team ID d'App Store Connect
     
     /// App Store Connect App ID
     public let appStoreAppID = "6502148299" // App ID de votre app dans App Store Connect
@@ -32,24 +32,12 @@ public class AppStoreConfigService {
             errors.append("Bundle ID ne correspond pas: attendu \(bundleID), trouvé \(Bundle.main.bundleIdentifier ?? "nil")")
         }
         
-        // Vérifier les entitlements
-        if !hasStoreKitEntitlement() {
-            errors.append("Entitlement StoreKit manquant")
-        }
-        
-        // Vérifier la configuration StoreKit
+        // Vérifier la configuration StoreKit en développement
         if !hasStoreKitConfiguration() {
-            errors.append("Fichier Configuration.storekit manquant")
+            errors.append("Fichier Configuration.storekit manquant - Créez-le pour tester localement")
         }
         
         return errors
-    }
-    
-    /// Vérifie la présence de l'entitlement StoreKit
-    private func hasStoreKitEntitlement() -> Bool {
-        // En fait, StoreKit n'a pas besoin d'entitlement spécifique
-        // mais on peut vérifier d'autres capabilities importantes
-        return true
     }
     
     /// Vérifie la présence du fichier de configuration StoreKit
@@ -93,9 +81,9 @@ public class AppStoreConfigService {
     /// Valide un Product ID
     public func isValidProductID(_ productID: String) -> Bool {
         let validIDs = [
-            "wheeltrack_premium_monthly",
-            "wheeltrack_premium_yearly",
-            "wheeltrack_premium_lifetime"
+            "com.andygrava.wheeltrack.premium.monthly",
+            "com.andygrava.wheeltrack.premium.yearly",
+            "com.andygrava.wheeltrack.premium.lifetime"
         ]
         return validIDs.contains(productID)
     }

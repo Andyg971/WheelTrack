@@ -6,8 +6,8 @@ struct VehiclePhotoManager: View {
     @Binding var vehicle: Vehicle
     @StateObject private var imageManager = ImageManager.shared
     @State private var showingPhotoPicker = false
-    @State private var selectedImages: [UIImage] = []
     @State private var photoPickerType: PhotoPickerType = .main
+    @State private var pickerTypeAtPresentation: PhotoPickerType?
     
     // MARK: - Types de sélecteur de photos
     private enum PhotoPickerType {
@@ -34,6 +34,7 @@ struct VehiclePhotoManager: View {
                     
                     Button(action: {
                         photoPickerType = .main
+                        pickerTypeAtPresentation = .main
                         showingPhotoPicker = true
                     }) {
                         Image(systemName: mainImage == nil ? "plus.circle.fill" : "pencil.circle.fill")
@@ -77,6 +78,7 @@ struct VehiclePhotoManager: View {
                         )
                         .onTapGesture {
                             photoPickerType = .main
+                            pickerTypeAtPresentation = .main
                             showingPhotoPicker = true
                         }
                 }
@@ -93,6 +95,7 @@ struct VehiclePhotoManager: View {
                     
                     Button(action: {
                         photoPickerType = .additional
+                        pickerTypeAtPresentation = .additional
                         showingPhotoPicker = true
                     }) {
                         Image(systemName: "plus.circle.fill")
@@ -146,6 +149,7 @@ struct VehiclePhotoManager: View {
                     
                     Button(action: {
                         photoPickerType = .documents
+                        pickerTypeAtPresentation = .documents
                         showingPhotoPicker = true
                     }) {
                         Image(systemName: "plus.circle.fill")
@@ -194,22 +198,21 @@ struct VehiclePhotoManager: View {
             imageManager.createDirectoriesIfNeeded()
         }
         .sheet(isPresented: $showingPhotoPicker) {
+            let capturedType = pickerTypeAtPresentation ?? photoPickerType
             PhotoPickerCoordinator(
-                selectedImages: $selectedImages,
-                allowsMultipleSelection: photoPickerType != .main,
-                maxSelectionCount: photoPickerType == .main ? 1 : 5
-            )
-        }
-        .onChange(of: selectedImages) { _, newImages in
-            handleSelectedImages(newImages)
+                allowsMultipleSelection: capturedType != .main,
+                maxSelectionCount: capturedType == .main ? 1 : 5
+            ) { images in
+                handleSelectedImages(images, for: capturedType)
+            }
         }
     }
     
     // MARK: - Méthodes privées
-    private func handleSelectedImages(_ images: [UIImage]) {
+    private func handleSelectedImages(_ images: [UIImage], for type: PhotoPickerType) {
         guard !images.isEmpty else { return }
         
-        switch photoPickerType {
+        switch type {
         case .main:
             if let image = images.first {
                 saveMainImage(image)
@@ -220,46 +223,50 @@ struct VehiclePhotoManager: View {
             saveDocumentImages(images)
         }
         
-        selectedImages = []
+        pickerTypeAtPresentation = nil
     }
     
     private func saveMainImage(_ image: UIImage) {
         // Supprimer l'ancienne image principale si elle existe
         if let oldImageURL = vehicle.mainImageURL {
-            _ = imageManager.deleteImage(fileName: oldImageURL, from: .vehicle)
+            _ = imageManager.deleteImage(fileName: oldImageURL, from: .vehicleMainPhoto)
         }
         
         // Compresser et sauvegarder la nouvelle image
         if let compressedImage = imageManager.compressImage(image, maxSizeKB: 800),
-           let fileName = imageManager.saveImage(compressedImage, to: .vehicle) {
+           let fileName = imageManager.saveImage(compressedImage, to: .vehicleMainPhoto) {
             vehicle.mainImageURL = fileName
             mainImage = compressedImage
         }
     }
     
     private func saveAdditionalImages(_ images: [UIImage]) {
+        var tempAdditional = additionalImages
         for image in images {
             if let compressedImage = imageManager.compressImage(image, maxSizeKB: 500),
-               let fileName = imageManager.saveImage(compressedImage, to: .vehicle) {
+               let fileName = imageManager.saveImage(compressedImage, to: .vehicleAdditionalPhoto) {
                 vehicle.additionalImagesURLs.append(fileName)
-                additionalImages.append(compressedImage)
+                tempAdditional.append(compressedImage)
             }
         }
+        additionalImages = tempAdditional // Réassignation pour forcer SwiftUI à détecter le changement
     }
     
     private func saveDocumentImages(_ images: [UIImage]) {
+        var tempDocuments = documentImages
         for image in images {
             if let compressedImage = imageManager.compressImage(image, maxSizeKB: 800),
-               let fileName = imageManager.saveImage(compressedImage, to: .vehicle) {
+               let fileName = imageManager.saveImage(compressedImage, to: .vehicleDocument) {
                 vehicle.documentsImageURLs.append(fileName)
-                documentImages.append(compressedImage)
+                tempDocuments.append(compressedImage)
             }
         }
+        documentImages = tempDocuments // Réassignation pour forcer SwiftUI à détecter le changement
     }
     
     private func deleteMainImage() {
         if let imageURL = vehicle.mainImageURL {
-            _ = imageManager.deleteImage(fileName: imageURL, from: .vehicle)
+            _ = imageManager.deleteImage(fileName: imageURL, from: .vehicleMainPhoto)
             vehicle.mainImageURL = nil
             mainImage = nil
         }
@@ -269,7 +276,7 @@ struct VehiclePhotoManager: View {
         guard index < vehicle.additionalImagesURLs.count else { return }
         
         let fileName = vehicle.additionalImagesURLs[index]
-        _ = imageManager.deleteImage(fileName: fileName, from: .vehicle)
+        _ = imageManager.deleteImage(fileName: fileName, from: .vehicleAdditionalPhoto)
         
         vehicle.additionalImagesURLs.remove(at: index)
         additionalImages.remove(at: index)
@@ -279,7 +286,7 @@ struct VehiclePhotoManager: View {
         guard index < vehicle.documentsImageURLs.count else { return }
         
         let fileName = vehicle.documentsImageURLs[index]
-        _ = imageManager.deleteImage(fileName: fileName, from: .vehicle)
+        _ = imageManager.deleteImage(fileName: fileName, from: .vehicleDocument)
         
         vehicle.documentsImageURLs.remove(at: index)
         documentImages.remove(at: index)
@@ -288,17 +295,17 @@ struct VehiclePhotoManager: View {
     private func loadExistingImages() {
         // Charger la photo principale
         if let mainImageURL = vehicle.mainImageURL {
-            mainImage = imageManager.loadImage(fileName: mainImageURL, from: .vehicle)
+            mainImage = imageManager.loadImage(fileName: mainImageURL, from: .vehicleMainPhoto)
         }
         
         // Charger les photos supplémentaires
         additionalImages = vehicle.additionalImagesURLs.compactMap { fileName in
-            imageManager.loadImage(fileName: fileName, from: .vehicle)
+            imageManager.loadImage(fileName: fileName, from: .vehicleAdditionalPhoto)
         }
         
         // Charger les documents
         documentImages = vehicle.documentsImageURLs.compactMap { fileName in
-            imageManager.loadImage(fileName: fileName, from: .vehicle)
+            imageManager.loadImage(fileName: fileName, from: .vehicleDocument)
         }
     }
 }

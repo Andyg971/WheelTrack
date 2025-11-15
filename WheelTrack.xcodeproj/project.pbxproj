@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		EDFFA05C2E4C98EB00459173 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EDFFA05B2E4C98EB00459173 /* StoreKit.framework */; };
+		EDC28C5E2E5C704C00656113 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EDC28C5D2E5C704C00656113 /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,10 +28,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EDC28C5D2E5C704C00656113 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		EDEC76EC2D889D3200BF565D /* WheelTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WheelTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDEC76FC2D889D3400BF565D /* WheelTrackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WheelTrackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDEC77062D889D3400BF565D /* WheelTrackUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WheelTrackUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		EDFFA05B2E4C98EB00459173 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -47,7 +47,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EDFFA05C2E4C98EB00459173 /* StoreKit.framework in Frameworks */,
+				EDC28C5E2E5C704C00656113 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,7 +90,7 @@
 		EDFFA05A2E4C98EB00459173 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				EDFFA05B2E4C98EB00459173 /* StoreKit.framework */,
+				EDC28C5D2E5C704C00656113 /* StoreKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -168,7 +168,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1630;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					EDEC76EB2D889D3200BF565D = {
 						CreatedOnToolsVersion = 16.2;
@@ -325,6 +325,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -382,6 +383,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -398,8 +400,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"WheelTrack/Preview Content\"";
 				DEVELOPMENT_TEAM = 5WUC3D8BMJ;
+				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WheelTrack utilise votre localisation en temps réel pour afficher les garages proches de vous et calculer les itinéraires. L'accès est nécessaire uniquement lorsque vous utilisez l'application.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -411,7 +415,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Wheel.WheelTrack;
+				PRODUCT_BUNDLE_IDENTIFIER = com.andygrava.wheeltrack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -431,8 +435,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"WheelTrack/Preview Content\"";
 				DEVELOPMENT_TEAM = 5WUC3D8BMJ;
+				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WheelTrack utilise votre localisation en temps réel pour afficher les garages proches de vous et calculer les itinéraires. L'accès est nécessaire uniquement lorsque vous utilisez l'application.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -444,7 +450,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Wheel.WheelTrack;
+				PRODUCT_BUNDLE_IDENTIFIER = com.andygrava.wheeltrack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;

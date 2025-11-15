@@ -97,7 +97,7 @@ public struct VehiclesView: View {
                 stopPeriodicUpdates()
             }
             .sheet(isPresented: $showingAddVehicle) {
-                AddVehicleView { vehicle in
+                AddVehicleView(currentVehicleCount: viewModel.vehicles.count) { vehicle in
                     viewModel.addVehicle(vehicle)
                 }
             }
@@ -123,41 +123,9 @@ public struct VehiclesView: View {
                         Button("Fermer") {
                             freemiumService.dismissUpgradeAlert()
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(PrimaryButtonStyle())
                     }
                     .padding()
-                }
-            }
-            .overlay(alignment: .bottomTrailing) {
-                // Bouton flottant unifié
-                if !viewModel.vehicles.isEmpty {
-                    Button(action: {
-                        // Vérification freemium avant d'ajouter un véhicule
-                        if freemiumService.canAddVehicle(currentCount: viewModel.vehicles.count) {
-                            showingAddVehicle = true
-                        } else {
-                            freemiumService.requestUpgrade(for: .unlimitedVehicles)
-                        }
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(
-                                LinearGradient(
-                                    colors: [.blue, .blue.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .clipShape(Circle())
-                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                    }
-                    .accessibilityLabel(L(CommonTranslations.addVehicle))
-                    .accessibilityHint("Touchez pour ouvrir le formulaire d'ajout de véhicule")
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 30)
                 }
             }
         }
@@ -199,7 +167,38 @@ public struct VehiclesView: View {
                         }
                     }
                 }
+                
                 Spacer()
+                
+                // ✅ Bouton + en haut à droite dans le header
+                Button(action: {
+                    // ✅ Forcer la synchronisation du statut Premium avant vérification
+                    freemiumService.syncPremiumStatusFromStoreKit()
+                    
+                    // Vérification freemium avant d'ajouter un véhicule
+                    if freemiumService.canAddVehicle(currentCount: viewModel.vehicles.count) {
+                        showingAddVehicle = true
+                    } else {
+                        freemiumService.requestUpgrade(for: .unlimitedVehicles)
+                    }
+                }) {
+                    Image(systemName: "plus")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            LinearGradient(
+                                colors: [.blue, .blue.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .clipShape(Circle())
+                        .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .accessibilityLabel(L(CommonTranslations.addVehicle))
+                .accessibilityHint("Touchez pour ouvrir le formulaire d'ajout de véhicule")
             }
 
         }
@@ -387,6 +386,9 @@ public struct VehiclesView: View {
             }
             
             Button(action: { 
+                // ✅ Forcer la synchronisation du statut Premium avant vérification
+                freemiumService.syncPremiumStatusFromStoreKit()
+                
                 // Vérification freemium avant d'ajouter un véhicule
                 if freemiumService.canAddVehicle(currentCount: viewModel.vehicles.count) {
                     showingAddVehicle = true
@@ -801,26 +803,31 @@ struct ModernVehicleCard: View {
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                HStack(spacing: 8) {
-                    // Statut actif/inactif
-                    Circle()
-                        .fill(vehicle.isActive ? Color.green : Color.gray)
-                        .frame(width: 8, height: 8)
-                    
-                    // Menu d'actions
-                    Menu {
-                        Button(action: { onEdit(vehicle) }) {
-                            Label("Modifier", systemImage: "pencil")
-                        }
-                        Button(role: .destructive, action: { showDeleteAlert = true }) {
-                            Label("Supprimer", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.system(size: 18))
-                            .foregroundColor(.secondary)
+                // Menu d'actions
+                Menu {
+                    Button(action: { 
+                        onEdit(vehicle)
+                        print("✏️ Modification du véhicule: \(vehicle.brand) \(vehicle.model)")
+                    }) {
+                        Label("Modifier", systemImage: "pencil")
                     }
+                    
+                    Divider()
+                    
+                    Button(role: .destructive, action: { 
+                        showDeleteAlert = true
+                        print("🗑️ Suppression demandée pour: \(vehicle.brand) \(vehicle.model)")
+                    }) {
+                        Label("Supprimer", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.blue)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(16)

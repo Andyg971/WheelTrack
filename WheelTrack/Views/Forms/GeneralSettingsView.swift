@@ -380,6 +380,7 @@ public struct GeneralSettingsView: View {
 
 extension Notification.Name {
     static let languageChanged = Notification.Name("languageChanged")
+    static let navigateToDashboard = Notification.Name("navigateToDashboard")
 }
 
 #Preview {

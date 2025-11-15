@@ -126,33 +126,6 @@ public struct MaintenanceView: View {
                     viewModel.updateMaintenance(updated)
                 }
             }
-            .overlay(alignment: .bottomTrailing) {
-                // Bouton flottant unifié
-                if !filteredMaintenances.isEmpty {
-                    Button(action: {
-                        showingAddSheet = true
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(
-                                LinearGradient(
-                                    colors: [.orange, .orange.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .clipShape(Circle())
-                            .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
-                    }
-                    .accessibilityLabel(MaintenanceView.localText("add_new_maintenance", language: appLanguage))
-                    .accessibilityHint("Touchez pour ouvrir le formulaire d'ajout de maintenance")
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 30)
-                }
-            }
         }
     }
     
@@ -193,6 +166,28 @@ public struct MaintenanceView: View {
                     }
                 }
                 Spacer()
+                
+                // Bouton d'ajout en haut à droite
+                Button(action: {
+                    showingAddSheet = true
+                }) {
+                    Image(systemName: "plus")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            LinearGradient(
+                                colors: [.orange, .orange.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .clipShape(Circle())
+                        .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .accessibilityLabel(MaintenanceView.localText("add_new_maintenance", language: appLanguage))
+                .accessibilityHint("Touchez pour ouvrir le formulaire d'ajout de maintenance")
             }
         }
     }
@@ -504,7 +499,7 @@ struct ModernMaintenanceCard: View {
     @AppStorage("app_language") private var appLanguage: String = "fr"
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             // Icône compacte
             Circle()
                 .fill(.orange.opacity(0.15))
@@ -515,41 +510,23 @@ struct ModernMaintenanceCard: View {
                         .foregroundColor(.orange)
                 )
             
-            // Informations principales
-            VStack(alignment: .leading, spacing: 2) {
-                Text(maintenance.titre)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                HStack(spacing: 8) {
-                    Text(maintenance.vehicule)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+            // Informations principales - FORMAT COMPACT
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(maintenance.titre)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
                     
-                    Text("•")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    VStack(spacing: 1) {
-                        Text(maintenance.date.formatted(.dateTime.day().month()))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text(maintenance.date.formatted(.dateTime.year()))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Text("•")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Text("\(maintenance.kilometrage) km")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    Spacer()
                 }
+                
+                // Format compact sur une seule ligne
+                Text("\(getVehicleModelOnly(maintenance.vehicule)) • \(DateFormatter.compactDateFormatter.string(from: maintenance.date)) • \(formatKilometrage(maintenance.kilometrage)) km")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
             }
             
             Spacer()
@@ -575,7 +552,7 @@ struct ModernMaintenanceCard: View {
                 }
             }
         }
-        .padding(16)
+        .padding(14)
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
@@ -588,6 +565,39 @@ struct ModernMaintenanceCard: View {
             )
         }
     }
+    
+    // Fonctions helper pour le format compact
+    private func getVehicleModelOnly(_ vehicleName: String) -> String {
+        // Supprime la marque (premier mot), garde le modèle
+        let components = vehicleName.components(separatedBy: " ")
+        if components.count >= 2 {
+            return components.dropFirst().joined(separator: " ")
+        }
+        return vehicleName // Si format inhabituel, garde tout
+    }
+    
+    private func formatKilometrage(_ km: Int) -> String {
+        if km >= 1000 {
+            return String(format: "%.0fk", Double(km) / 1000.0)
+        }
+        return "\(km)"
+    }
+}
+
+// MARK: - Date Formatter Extension
+
+extension DateFormatter {
+    static let shortDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yy"
+        return formatter
+    }()
+    
+    static let compactDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM"
+        return formatter
+    }()
 }
 
 #Preview {

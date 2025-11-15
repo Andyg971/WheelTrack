@@ -40,38 +40,38 @@ public class FreemiumService: ObservableObject {
         var title: String {
             switch self {
             case .unlimitedVehicles:
-                return "Véhicules illimités"
+                return L(CommonTranslations.featureUnlimitedVehiclesTitle)
             case .advancedAnalytics:
-                return "Analytics avancés"
+                return L(CommonTranslations.featureAdvancedAnalyticsTitle)
             case .rentalModule:
-                return "Module Location"
+                return L(CommonTranslations.featureRentalModuleTitle)
             case .pdfExport:
-                return "Export PDF"
+                return L(CommonTranslations.featurePdfExportTitle)
             case .garageModule:
-                return "Garages favoris"
+                return L(CommonTranslations.featureGarageModuleTitle)
             case .maintenanceReminders:
-                return "Rappels maintenance"
+                return L(CommonTranslations.featureMaintenanceRemindersTitle)
             case .cloudSync:
-                return "Synchronisation iCloud"
+                return L(CommonTranslations.featureCloudSyncTitle)
             }
         }
         
         var description: String {
             switch self {
             case .unlimitedVehicles:
-                return "Ajoutez autant de véhicules que vous voulez"
+                return L(CommonTranslations.featureUnlimitedVehiclesDesc)
             case .advancedAnalytics:
-                return "Graphiques détaillés et statistiques complètes"
+                return L(CommonTranslations.featureAdvancedAnalyticsDesc)
             case .rentalModule:
-                return "Gérez la location de vos véhicules"
+                return L(CommonTranslations.featureRentalModuleDesc)
             case .pdfExport:
-                return "Exportez vos données en PDF"
+                return L(CommonTranslations.featurePdfExportDesc)
             case .garageModule:
-                return "Sauvegardez vos garages favoris"
+                return L(CommonTranslations.featureGarageModuleDesc)
             case .maintenanceReminders:
-                return "Rappels illimités pour l'entretien"
+                return L(CommonTranslations.featureMaintenanceRemindersDesc)
             case .cloudSync:
-                return "Synchronisez vos données sur tous vos appareils"
+                return L(CommonTranslations.featureCloudSyncDesc)
             }
         }
         
@@ -108,10 +108,9 @@ public class FreemiumService: ObservableObject {
     
     /// Vérifie si l'utilisateur peut ajouter un véhicule
     public func canAddVehicle(currentCount: Int) -> Bool {
-        if isPremium {
-            return true
-        }
-        return currentCount < maxVehiclesFree
+        let canAdd = isPremium || currentCount < maxVehiclesFree
+        print("🚗 canAddVehicle - Premium: \(isPremium), Count: \(currentCount)/\(maxVehiclesFree), CanAdd: \(canAdd)")
+        return canAdd
     }
     
     /// Vérifie si l'utilisateur peut ajouter un contrat de location
@@ -182,6 +181,32 @@ public class FreemiumService: ObservableObject {
         showPurchaseSuccess = true
     }
     
+    /// Ferme la pop-up de succès et déclenche la navigation vers le dashboard
+    public func dismissPurchaseSuccessAndNavigateToDashboard() {
+        print("🎯 FreemiumService - Fermeture popup et navigation vers dashboard")
+        showPurchaseSuccess = false
+        
+        // Envoyer la notification pour naviguer vers le dashboard
+        NotificationCenter.default.post(
+            name: .navigateToDashboard,
+            object: nil
+        )
+    }
+    
+    /// Méthode de test pour simuler un achat réussi (pour les tests)
+    public func testPurchaseSuccess() {
+        print("🧪 Test - Simulation d'un achat réussi")
+        showPurchaseSuccessPopup(purchaseType: .lifetime, productID: "com.andygrava.wheeltrack.premium.lifetime")
+    }
+    
+    /// Force la synchronisation du statut Premium depuis StoreKit
+    public func syncPremiumStatusFromStoreKit() {
+        Task {
+            await StoreKitService.shared.updateCustomerProductStatus()
+            print("🔄 Synchronisation du statut Premium depuis StoreKit terminée")
+        }
+    }
+    
     /// Désactive la version premium
     public func deactivatePremium() {
         isPremium = false
@@ -218,9 +243,10 @@ public class FreemiumService: ObservableObject {
         }
     }
     
-    private func savePremiumStatus() {
+    public func savePremiumStatus() {
         UserDefaults.standard.set(isPremium, forKey: "is_premium_user")
         UserDefaults.standard.set(stringFromPurchaseType(currentPurchaseType), forKey: "purchase_type")
+        print("💾 Statut Premium sauvegardé: \(isPremium) - Type: \(currentPurchaseType)")
     }
     
     private func purchaseTypeFromString(_ string: String) -> PurchaseType? {

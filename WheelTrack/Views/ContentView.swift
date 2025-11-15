@@ -109,6 +109,17 @@ struct ContentView: View {
         .onAppear {
             checkAuthenticationState()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToDashboard)) { _ in
+            // Rediriger vers le tableau de bord (onglet 0) avec une animation plus visible
+            print("🎯 Navigation vers le dashboard déclenchée")
+            withAnimation(.easeInOut(duration: 0.5)) {
+                selectedMainTab = 0
+            }
+            
+            // Feedback haptique pour confirmer l'action
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+        }
     }
     
     // MARK: - Modern Loading View

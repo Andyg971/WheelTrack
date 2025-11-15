@@ -53,9 +53,12 @@ struct LicensePlateTextField: View {
 }
 
 struct AddVehicleView: View {
+    var currentVehicleCount: Int = 0 // ✅ Nouveau paramètre pour compter les véhicules existants
     var onAdd: (Vehicle) -> Void
+    
     @Environment(\.dismiss) private var dismiss
     @AppStorage("app_language") private var appLanguage = "fr"
+    @StateObject private var freemiumService = FreemiumService.shared
     
     // Fonction de localisation
     static func localText(_ key: String, language: String) -> String {
@@ -173,6 +176,78 @@ struct AddVehicleView: View {
     var body: some View {
         NavigationView {
             Form {
+                // ✅ Section d'information freemium - limite atteinte
+                if !freemiumService.isPremium && currentVehicleCount >= freemiumService.maxVehiclesFree {
+                    Section {
+                        VStack(spacing: 12) {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                Text("Limite atteinte")
+                                    .font(.headline)
+                                    .foregroundColor(.orange)
+                                Spacer()
+                            }
+                            
+                            Text("Vous avez atteint la limite de \(freemiumService.maxVehiclesFree) véhicules de la version gratuite. Passez à Premium pour ajouter des véhicules illimités.")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.leading)
+                            
+                            Button(action: {
+                                freemiumService.requestUpgrade(for: .unlimitedVehicles)
+                            }) {
+                                HStack {
+                                    Image(systemName: "crown.fill")
+                                    Text("Passer à Premium")
+                                }
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(12)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
+                }
+                
+                // ✅ Section d'information pour utilisateurs freemium proches de la limite
+                if !freemiumService.isPremium && currentVehicleCount < freemiumService.maxVehiclesFree {
+                    Section {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Version gratuite")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(currentVehicleCount + 1)/\(freemiumService.maxVehiclesFree) véhicules")
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                            }
+                            
+                            Spacer()
+                            
+                            Button("Premium") {
+                                freemiumService.requestUpgrade(for: .unlimitedVehicles)
+                            }
+                            .font(.caption)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.blue.opacity(0.1))
+                            .foregroundColor(.blue)
+                            .cornerRadius(8)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                
                 Section {
                     TextField(AddVehicleView.localText("brand", language: appLanguage), text: $brand)
                     TextField(AddVehicleView.localText("model", language: appLanguage), text: $model)
@@ -285,9 +360,9 @@ struct AddVehicleView: View {
                 Section {
                     VehiclePhotoSection(vehicle: $newVehicle)
                 } header: {
-                    Text(appLanguage == "en" ? "Photos & Documents" : "Photos et Documents")
+                    Text(appLanguage == "en" ? "Photo" : "Photo")
                 } footer: {
-                    Text(appLanguage == "en" ? "Add photos of your vehicle and important documents (registration, insurance, etc.)" : "Ajoutez des photos de votre véhicule et des documents importants (carte grise, assurance, etc.)")
+                    Text(appLanguage == "en" ? "Add a photo of your vehicle" : "Ajoutez une photo de votre véhicule")
                 }
             }
             .navigationTitle(AddVehicleView.localText("new_vehicle", language: appLanguage))
@@ -301,6 +376,12 @@ struct AddVehicleView: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button(AddVehicleView.localText("add", language: appLanguage)) {
+                        // ✅ Vérification freemium AVANT la validation du formulaire
+                        if !freemiumService.canAddVehicle(currentCount: currentVehicleCount) {
+                            freemiumService.requestUpgrade(for: .unlimitedVehicles)
+                            return
+                        }
+                        
                         if validateForm() {
                             saveVehicle()
                         } else {
@@ -314,6 +395,15 @@ struct AddVehicleView: View {
             Button(AddVehicleView.localText("ok", language: appLanguage)) { }
         } message: {
             Text(validationMessage)
+        }
+        // ✅ Ajout de l'affichage premium
+        .sheet(isPresented: $freemiumService.showUpgradeAlert) {
+            if let blockedFeature = freemiumService.blockedFeature {
+                PremiumUpgradeAlert(feature: blockedFeature)
+                    .onAppear {
+                        print("📱 AddVehicleView - Popup Premium affichée pour: \(blockedFeature)")
+                    }
+            }
         }
     }
     
@@ -421,187 +511,75 @@ struct AddVehicleView: View {
     }
 }
 
+// MARK: - Photo Picker Type (DOIT être défini AVANT VehiclePhotoSection)
+enum PhotoPickerType {
+    case main
+    case additional
+    case documents
+}
 
-
-// MARK: - Vehicle Photo Section
+// MARK: - Vehicle Photo Section (ULTRA-SIMPLIFIÉ - Photo uniquement)
 struct VehiclePhotoSection: View {
     @Binding var vehicle: Vehicle
-    @State private var imageManager = VehicleImageManager()
+    private let imageManager = ImageManager.shared
     @State private var showingPhotoPicker = false
-    @State private var selectedImages: [UIImage] = []
-    @State private var photoPickerType: PhotoPickerType = .main
     @AppStorage("app_language") private var appLanguage = "fr"
     
-    // États pour l'affichage
+    // État pour l'affichage (1 seule photo)
     @State private var mainImage: UIImage?
-    @State private var additionalImages: [UIImage] = []
-    @State private var documentImages: [UIImage] = []
     
     var body: some View {
-        VStack(spacing: 20) {
-            // MARK: - Photo principale
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label(appLanguage == "en" ? "Main Photo" : "Photo principale", systemImage: "camera")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        photoPickerType = .main
-                        showingPhotoPicker = true
-                    }) {
-                        Image(systemName: mainImage == nil ? "plus.circle.fill" : "pencil.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                    }
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label(appLanguage == "en" ? "Photo" : "Photo", systemImage: "camera")
+                    .font(.headline)
+                    .foregroundColor(.primary)
                 
-                // Affichage de la photo principale
-                if let mainImage = mainImage {
-                    ZStack(alignment: .topTrailing) {
-                        Image(uiImage: mainImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 200)
-                            .clipped()
-                            .cornerRadius(12)
-                        
-                        Button(action: deleteMainImage) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
-                                .background(Color.white, in: Circle())
-                                .font(.title2)
-                        }
-                        .padding(8)
-                    }
-                } else {
-                    // Placeholder pour photo principale
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(.systemGray5))
+                Spacer()
+                
+                Button(action: {
+                    showingPhotoPicker = true
+                }) {
+                    Image(systemName: mainImage == nil ? "plus.circle.fill" : "pencil.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            if let mainImage = mainImage {
+                ZStack(alignment: .topTrailing) {
+                    Image(uiImage: mainImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
                         .frame(height: 200)
-                        .overlay(
-                            VStack {
-                                Image(systemName: "camera.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.gray)
-                                Text(appLanguage == "en" ? "Add main photo" : "Ajouter une photo principale")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                        )
-                        .onTapGesture {
-                            photoPickerType = .main
-                            showingPhotoPicker = true
-                        }
-                }
-            }
-            
-            // MARK: - Photos supplémentaires
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label(appLanguage == "en" ? "Additional Photos" : "Photos supplémentaires", systemImage: "photo.on.rectangle")
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                        .clipped()
+                        .cornerRadius(12)
                     
-                    Spacer()
-                    
-                    Button(action: {
-                        photoPickerType = .additional
-                        showingPhotoPicker = true
-                    }) {
-                        Image(systemName: "plus.circle.fill")
+                    Button(action: deletePhoto) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                            .background(Color.white, in: Circle())
                             .font(.title2)
-                            .foregroundColor(.blue)
                     }
+                    .padding(8)
                 }
-                
-                if !additionalImages.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(additionalImages.enumerated()), id: \.offset) { index, image in
-                                ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 120, height: 90)
-                                        .clipped()
-                                        .cornerRadius(8)
-                                    
-                                    Button(action: { deleteAdditionalImage(at: index) }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.red)
-                                            .background(Color.white, in: Circle())
-                                            .font(.caption)
-                                    }
-                                    .padding(4)
-                                }
-                            }
+            } else {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray5))
+                    .frame(height: 200)
+                    .overlay(
+                        VStack {
+                            Image(systemName: "camera.fill")
+                                .font(.largeTitle)
+                                .foregroundColor(.gray)
+                            Text(appLanguage == "en" ? "Add photo" : "Ajouter une photo")
+                                .font(.caption)
+                                .foregroundColor(.gray)
                         }
-                        .padding(.horizontal)
-                    }
-                } else {
-                    Text(appLanguage == "en" ? "No additional photos" : "Aucune photo supplémentaire")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
-                }
-            }
-            
-            // MARK: - Documents
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label(appLanguage == "en" ? "Documents" : "Documents", systemImage: "doc.fill")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        photoPickerType = .documents
+                    )
+                    .onTapGesture {
                         showingPhotoPicker = true
-                    }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
                     }
-                }
-                
-                if !documentImages.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(documentImages.enumerated()), id: \.offset) { index, image in
-                                ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 120, height: 90)
-                                        .clipped()
-                                        .cornerRadius(8)
-                                    
-                                    Button(action: { deleteDocumentImage(at: index) }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.red)
-                                            .background(Color.white, in: Circle())
-                                            .font(.caption)
-                                    }
-                                    .padding(4)
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                } else {
-                    Text(appLanguage == "en" ? "No documents" : "Aucun document")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
-                }
             }
         }
         .onAppear {
@@ -610,111 +588,52 @@ struct VehiclePhotoSection: View {
         }
         .sheet(isPresented: $showingPhotoPicker) {
             PhotoPickerWrapper(
-                selectedImages: $selectedImages,
-                allowsMultipleSelection: photoPickerType != .main,
-                maxSelectionCount: photoPickerType == .main ? 1 : 5
-            )
-        }
-        .onChange(of: selectedImages) { _, newImages in
-            handleSelectedImages(newImages)
+                allowsMultipleSelection: false,
+                maxSelectionCount: 1
+            ) { images in
+                handlePhoto(images)
+            }
         }
     }
     
-    // MARK: - Fonctions de gestion des images
+    // MARK: - Fonctions
     private func loadExistingImages() {
         if let mainImageURL = vehicle.mainImageURL {
-            mainImage = imageManager.loadImage(fileName: mainImageURL)
-        }
-        
-        additionalImages = vehicle.additionalImagesURLs.compactMap { fileName in
-            imageManager.loadImage(fileName: fileName)
-        }
-        
-        documentImages = vehicle.documentsImageURLs.compactMap { fileName in
-            imageManager.loadImage(fileName: fileName)
+            mainImage = imageManager.loadImage(fileName: mainImageURL, from: .vehicleMainPhoto)
         }
     }
     
-    private func handleSelectedImages(_ images: [UIImage]) {
-        guard !images.isEmpty else { return }
+    private func handlePhoto(_ images: [UIImage]) {
+        guard let image = images.first else { return }
         
-        switch photoPickerType {
-        case .main:
-            if let image = images.first {
-                mainImage = imageManager.compressImage(image, maxSizeKB: 800)
-                // Sauvegarder et mettre à jour le véhicule
-                if let fileName = imageManager.saveImage(image) {
-                    vehicle.mainImageURL = fileName
-                }
-            }
-            
-        case .additional:
-            for image in images {
-                if let compressedImage = imageManager.compressImage(image, maxSizeKB: 500) {
-                    additionalImages.append(compressedImage)
-                    // Sauvegarder et mettre à jour le véhicule
-                    if let fileName = imageManager.saveImage(compressedImage) {
-                        vehicle.additionalImagesURLs.append(fileName)
-                    }
-                }
-            }
-            
-        case .documents:
-            for image in images {
-                if let compressedImage = imageManager.compressImage(image, maxSizeKB: 500) {
-                    documentImages.append(compressedImage)
-                    // Sauvegarder et mettre à jour le véhicule
-                    if let fileName = imageManager.saveImage(compressedImage) {
-                        vehicle.documentsImageURLs.append(fileName)
-                    }
-                }
-            }
+        // Supprimer l'ancienne photo si elle existe
+        if let oldImageURL = vehicle.mainImageURL {
+            _ = imageManager.deleteImage(fileName: oldImageURL, from: .vehicleMainPhoto)
         }
         
-        selectedImages = []
+        // Sauvegarder la nouvelle photo
+        if let compressedImage = imageManager.compressImage(image, maxSizeKB: 800),
+           let fileName = imageManager.saveImage(compressedImage, to: .vehicleMainPhoto) {
+            vehicle.mainImageURL = fileName
+            mainImage = compressedImage
+        }
     }
     
-    private func deleteMainImage() {
+    private func deletePhoto() {
         if let imageURL = vehicle.mainImageURL {
-            let _ = imageManager.deleteImage(fileName: imageURL)
+            _ = imageManager.deleteImage(fileName: imageURL, from: .vehicleMainPhoto)
         }
         mainImage = nil
         vehicle.mainImageURL = nil
     }
-    
-    private func deleteAdditionalImage(at index: Int) {
-        guard index < vehicle.additionalImagesURLs.count else { return }
-        
-        let fileName = vehicle.additionalImagesURLs[index]
-        let _ = imageManager.deleteImage(fileName: fileName)
-        
-        additionalImages.remove(at: index)
-        vehicle.additionalImagesURLs.remove(at: index)
-    }
-    
-    private func deleteDocumentImage(at index: Int) {
-        guard index < vehicle.documentsImageURLs.count else { return }
-        
-        let fileName = vehicle.documentsImageURLs[index]
-        let _ = imageManager.deleteImage(fileName: fileName)
-        
-        documentImages.remove(at: index)
-        vehicle.documentsImageURLs.remove(at: index)
-    }
-}
-
-// MARK: - Photo Picker Type
-enum PhotoPickerType {
-    case main
-    case additional
-    case documents
 }
 
 // MARK: - Photo Picker Wrapper
 struct PhotoPickerWrapper: UIViewControllerRepresentable {
-    @Binding var selectedImages: [UIImage]
     let allowsMultipleSelection: Bool
     let maxSelectionCount: Int
+    let onPicked: ([UIImage]) -> Void
+    
     @Environment(\.dismiss) private var dismiss
     
     func makeUIViewController(context: Context) -> PHPickerViewController {
@@ -745,15 +664,15 @@ struct PhotoPickerWrapper: UIViewControllerRepresentable {
             
             guard !results.isEmpty else { return }
             
-            var newImages: [UIImage] = []
+            var images: [UIImage] = []
             let group = DispatchGroup()
             
             for result in results {
                 group.enter()
-                result.itemProvider.loadObject(ofClass: UIImage.self) { image, error in
-                    if let image = image as? UIImage {
+                result.itemProvider.loadObject(ofClass: UIImage.self) { image, _ in
+                    if let uiImage = image as? UIImage {
                         DispatchQueue.main.async {
-                            newImages.append(image)
+                            images.append(uiImage)
                             group.leave()
                         }
                     } else {
@@ -763,88 +682,19 @@ struct PhotoPickerWrapper: UIViewControllerRepresentable {
             }
             
             group.notify(queue: .main) {
-                self.parent.selectedImages = newImages
+                self.parent.onPicked(images)
             }
         }
     }
 }
 
-// MARK: - Vehicle Image Manager
-class VehicleImageManager {
-    
-    // MARK: - Répertoires
-    private var documentsURL: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-    }
-    
-    private var vehicleImagesURL: URL {
-        documentsURL.appendingPathComponent("VehicleImages")
-    }
-    
-    // MARK: - Initialisation
-    func createDirectoriesIfNeeded() {
-        if !FileManager.default.fileExists(atPath: vehicleImagesURL.path) {
-            try? FileManager.default.createDirectory(at: vehicleImagesURL, withIntermediateDirectories: true)
-        }
-    }
-    
-    // MARK: - Sauvegarde d'images
-    func saveImage(_ image: UIImage, withName name: String? = nil) -> String? {
-        let fileName = name ?? UUID().uuidString + ".jpg"
-        let fileURL = vehicleImagesURL.appendingPathComponent(fileName)
-        
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            return nil
-        }
-        
-        do {
-            try imageData.write(to: fileURL)
-            return fileName
-        } catch {
-            print("Erreur lors de la sauvegarde de l'image: \(error)")
-            return nil
-        }
-    }
-    
-    // MARK: - Récupération d'images
-    func loadImage(fileName: String) -> UIImage? {
-        let fileURL = vehicleImagesURL.appendingPathComponent(fileName)
-        
-        guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            return nil
-        }
-        
-        return UIImage(contentsOfFile: fileURL.path)
-    }
-    
-    // MARK: - Suppression d'images
-    func deleteImage(fileName: String) -> Bool {
-        let fileURL = vehicleImagesURL.appendingPathComponent(fileName)
-        
-        do {
-            try FileManager.default.removeItem(at: fileURL)
-            return true
-        } catch {
-            print("Erreur lors de la suppression de l'image: \(error)")
-            return false
-        }
-    }
-    
-    // MARK: - Compression intelligente
-    func compressImage(_ image: UIImage, maxSizeKB: Int = 500) -> UIImage? {
-        var compressionQuality: CGFloat = 1.0
-        var imageData = image.jpegData(compressionQuality: compressionQuality)
-        
-        while let data = imageData, data.count > maxSizeKB * 1024 && compressionQuality > 0.1 {
-            compressionQuality -= 0.1
-            imageData = image.jpegData(compressionQuality: compressionQuality)
-        }
-        
-        guard let finalData = imageData else { return nil }
-        return UIImage(data: finalData)
-    }
+// La classe VehicleImageManager a été supprimée.
+// Utiliser ImageManager.shared à la place pour une gestion cohérente des dossiers.
+
+#Preview("Freemium - 1/2 véhicules") {
+    AddVehicleView(currentVehicleCount: 1) { _ in }
 }
 
-#Preview {
-    AddVehicleView { _ in }
+#Preview("Freemium - Limite atteinte") {
+    AddVehicleView(currentVehicleCount: 2) { _ in }
 } 

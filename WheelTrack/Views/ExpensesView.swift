@@ -13,14 +13,19 @@ public struct ExpensesView: View {
 
     // ✅ Migration vers système centralisé
     @EnvironmentObject var localizationService: LocalizationService
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     public init(viewModel: ExpensesViewModel, vehiclesViewModel: VehiclesViewModel) {
         self.viewModel = viewModel
         self.vehiclesViewModel = vehiclesViewModel
     }
     
+    private var isIPad: Bool {
+        horizontalSizeClass == .regular
+    }
+    
     public var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 24) {
                     // En-tête moderne avec icône
@@ -333,61 +338,66 @@ public struct ExpensesView: View {
     }
     
     private var modernEmptyStateView: some View {
-        VStack(spacing: 32) {
-            VStack(spacing: 20) {
-                // Illustration moderne
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.blue.opacity(0.1), .blue.opacity(0.05)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+        HStack {
+            Spacer(minLength: 0)
+            VStack(spacing: 32) {
+                VStack(spacing: 20) {
+                    // Illustration moderne
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.blue.opacity(0.1), .blue.opacity(0.05)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                        .frame(width: 120, height: 120)
+                            .frame(width: 120, height: 120)
+                        
+                        Image(systemName: "creditcard.trianglebadge.exclamationmark")
+                            .font(.system(size: 48, weight: .medium))
+                            .foregroundColor(.blue.opacity(0.6))
+                    }
                     
-                    Image(systemName: "creditcard.trianglebadge.exclamationmark")
-                        .font(.system(size: 48, weight: .medium))
-                        .foregroundColor(.blue.opacity(0.6))
+                    VStack(spacing: 12) {
+                        Text(L(CommonTranslations.noExpensesFound))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        
+                        Text(L(CommonTranslations.expensesWillAppearHere))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(2)
+                    }
                 }
                 
-                VStack(spacing: 12) {
-                    Text(L(CommonTranslations.noExpensesFound))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    
-                    Text(L(CommonTranslations.expensesWillAppearHere))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(2)
-                }
-            }
-            
-            Button(action: { showingAddExpense = true }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 16))
-                    Text(L(CommonTranslations.addExpense))
-                        .fontWeight(.semibold)
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background(
-                    LinearGradient(
-                        colors: [.blue, .blue.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                Button(action: { showingAddExpense = true }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 16))
+                        Text(L(CommonTranslations.addExpense))
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(
+                        LinearGradient(
+                            colors: [.blue, .blue.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .clipShape(Capsule())
-                .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
+                    .clipShape(Capsule())
+                    .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
+                }
             }
+            .frame(maxWidth: isIPad ? 600 : .infinity)
+            .padding(.vertical, 60)
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 60)
     }
     
     // MARK: - Computed Properties

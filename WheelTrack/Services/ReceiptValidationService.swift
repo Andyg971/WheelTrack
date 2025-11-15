@@ -148,7 +148,7 @@ public class ReceiptValidationService {
                 }
                 
                 // Vérifier si c'est un achat à vie
-                if transaction.productID == "wheeltrack_premium_lifetime" {
+                if transaction.productID == "com.andygrava.wheeltrack.premium.lifetime" {
                     lifetimePurchases.append(transaction.productID)
                     print("✅ Achat à vie trouvé: \(transaction.productID)")
                 }
@@ -227,7 +227,7 @@ public class ReceiptValidationService {
         
         // Analyser les achats in-app
         for purchase in response.receipt.inApp {
-            if purchase.productId == "wheeltrack_premium_lifetime" {
+            if purchase.productId == "com.andygrava.wheeltrack.premium.lifetime" {
                 lifetimePurchases.append(purchase.productId)
             } else if let expiresDate = purchase.expiresDateMs,
                       Date().timeIntervalSince1970 * 1000 < expiresDate {

@@ -15,21 +15,45 @@ class ImageManager: ObservableObject {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     }
     
-    private var vehicleImagesURL: URL {
-        documentsURL.appendingPathComponent("VehicleImages")
+    // Dossier Photos pour les images de véhicules
+    private var photosURL: URL {
+        documentsURL.appendingPathComponent("Photos")
     }
     
+    // Photos principales de véhicules
+    private var vehicleMainPhotosURL: URL {
+        photosURL
+    }
+    
+    // Photos supplémentaires de véhicules
+    private var vehicleAdditionalPhotosURL: URL {
+        photosURL.appendingPathComponent("Supplementaires")
+    }
+    
+    // Documents de véhicules (carte grise, assurance, etc.)
+    private var vehicleDocumentsURL: URL {
+        documentsURL.appendingPathComponent("VehicleDocuments")
+    }
+    
+    // Reçus de dépenses
     private var expenseImagesURL: URL {
         documentsURL.appendingPathComponent("ExpenseImages")
     }
     
+    // Photos de maintenance
     private var maintenanceImagesURL: URL {
         documentsURL.appendingPathComponent("MaintenanceImages")
     }
     
     // MARK: - Initialisation
     func createDirectoriesIfNeeded() {
-        let directories = [vehicleImagesURL, expenseImagesURL, maintenanceImagesURL]
+        let directories = [
+            vehicleMainPhotosURL,
+            vehicleAdditionalPhotosURL,
+            vehicleDocumentsURL,
+            expenseImagesURL,
+            maintenanceImagesURL
+        ]
         
         for directory in directories {
             if !FileManager.default.fileExists(atPath: directory.path) {
@@ -44,8 +68,12 @@ class ImageManager: ObservableObject {
         let directoryURL: URL
         
         switch category {
-        case .vehicle:
-            directoryURL = vehicleImagesURL
+        case .vehicleMainPhoto:
+            directoryURL = vehicleMainPhotosURL
+        case .vehicleAdditionalPhoto:
+            directoryURL = vehicleAdditionalPhotosURL
+        case .vehicleDocument:
+            directoryURL = vehicleDocumentsURL
         case .expense:
             directoryURL = expenseImagesURL
         case .maintenance:
@@ -72,8 +100,12 @@ class ImageManager: ObservableObject {
         let directoryURL: URL
         
         switch category {
-        case .vehicle:
-            directoryURL = vehicleImagesURL
+        case .vehicleMainPhoto:
+            directoryURL = vehicleMainPhotosURL
+        case .vehicleAdditionalPhoto:
+            directoryURL = vehicleAdditionalPhotosURL
+        case .vehicleDocument:
+            directoryURL = vehicleDocumentsURL
         case .expense:
             directoryURL = expenseImagesURL
         case .maintenance:
@@ -94,8 +126,12 @@ class ImageManager: ObservableObject {
         let directoryURL: URL
         
         switch category {
-        case .vehicle:
-            directoryURL = vehicleImagesURL
+        case .vehicleMainPhoto:
+            directoryURL = vehicleMainPhotosURL
+        case .vehicleAdditionalPhoto:
+            directoryURL = vehicleAdditionalPhotosURL
+        case .vehicleDocument:
+            directoryURL = vehicleDocumentsURL
         case .expense:
             directoryURL = expenseImagesURL
         case .maintenance:
@@ -139,23 +175,20 @@ class ImageManager: ObservableObject {
 
 // MARK: - Enums et structures de support
 enum ImageCategory {
-    case vehicle
-    case expense
-    case maintenance
+    case vehicleMainPhoto       // Photo principale du véhicule → Documents/Photos/
+    case vehicleAdditionalPhoto // Photos supplémentaires → Documents/Photos/Supplementaires/
+    case vehicleDocument        // Documents (carte grise, etc.) → Documents/VehicleDocuments/
+    case expense               // Reçus de dépenses → Documents/ExpenseImages/
+    case maintenance           // Photos de maintenance → Documents/MaintenanceImages/
 }
 
 // MARK: - Photo Picker Coordinator
 struct PhotoPickerCoordinator: UIViewControllerRepresentable {
-    @Binding var selectedImages: [UIImage]
     let allowsMultipleSelection: Bool
     let maxSelectionCount: Int
-    @Environment(\.dismiss) private var dismiss
+    let onPicked: ([UIImage]) -> Void
     
-    init(selectedImages: Binding<[UIImage]>, allowsMultipleSelection: Bool = false, maxSelectionCount: Int = 1) {
-        self._selectedImages = selectedImages
-        self.allowsMultipleSelection = allowsMultipleSelection
-        self.maxSelectionCount = maxSelectionCount
-    }
+    @Environment(\.dismiss) private var dismiss
     
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var configuration = PHPickerConfiguration()
@@ -185,15 +218,15 @@ struct PhotoPickerCoordinator: UIViewControllerRepresentable {
             
             guard !results.isEmpty else { return }
             
-            var newImages: [UIImage] = []
+            var images: [UIImage] = []
             let group = DispatchGroup()
             
             for result in results {
                 group.enter()
-                result.itemProvider.loadObject(ofClass: UIImage.self) { image, error in
-                    if let image = image as? UIImage {
+                result.itemProvider.loadObject(ofClass: UIImage.self) { image, _ in
+                    if let uiImage = image as? UIImage {
                         DispatchQueue.main.async {
-                            newImages.append(image)
+                            images.append(uiImage)
                             group.leave()
                         }
                     } else {
@@ -203,7 +236,7 @@ struct PhotoPickerCoordinator: UIViewControllerRepresentable {
             }
             
             group.notify(queue: .main) {
-                self.parent.selectedImages = newImages
+                self.parent.onPicked(images)
             }
         }
     }

@@ -109,7 +109,7 @@ public struct DashboardView: View {
     }
     
     public var body: some View {
-        NavigationView {
+        NavigationStack {
             mainContentView
         }
     }
@@ -126,11 +126,6 @@ public struct DashboardView: View {
             }
             .onDisappear {
                 stopPeriodicUpdates()
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    addExpenseButton
-                }
             }
             .sheet(isPresented: $showingAddExpense) {
                 AddExpenseView(vehicles: vehiclesViewModel.vehicles, onAdd: { expense in
@@ -180,7 +175,7 @@ public struct DashboardView: View {
     
     private var contentSections: some View {
         Group {
-            HeaderView()
+            dashboardHeaderWithButton
             expenseSummarySection
             rentalSummarySection
             
@@ -188,6 +183,51 @@ public struct DashboardView: View {
             chartSection
             recentExpensesSection
         }
+    }
+    
+    // Header du Dashboard avec bouton + (identique à VehiclesView)
+    private var dashboardHeaderWithButton: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L(CommonTranslations.hello))
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                
+                Text(L(CommonTranslations.overview))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Badge Premium si l'utilisateur est Premium
+            if freemiumService.isPremium {
+                UserPremiumStatusBadge(purchaseType: freemiumService.currentPurchaseType)
+            }
+            
+            // Bouton + (identique à celui de VehiclesView)
+            Button(action: {
+                showingAddExpense = true
+            }) {
+                Image(systemName: "plus")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        LinearGradient(
+                            colors: [.blue, .blue.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .clipShape(Circle())
+                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+            .accessibilityLabel(L(CommonTranslations.add) + " " + L(CommonTranslations.expenses))
+        }
+        .padding(.horizontal, 4)
     }
     
     private var expenseSummarySection: some View {
@@ -202,7 +242,7 @@ public struct DashboardView: View {
         RentalSummaryCard(
             activeRentals: simpleActiveRentals.count,
             availableVehicles: simpleAvailableVehicles.count,
-            currentPeriodRevenue: simplePeriodRevenue,
+            currentPeriodRevenue: currentPeriodRevenue,
             timeRange: selectedTimeRange
         )
     }
@@ -236,27 +276,6 @@ public struct DashboardView: View {
         )
     }
     
-    private var addExpenseButton: some View {
-        Button(action: {
-            showingAddExpense = true
-        }) {
-            Image(systemName: "plus")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(width: 36, height: 36)
-                .background(
-                    LinearGradient(
-                        colors: [Color.blue, Color.blue.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .clipShape(Circle())
-                .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-        }
-        .accessibilityLabel(L(CommonTranslations.add) + " " + L(CommonTranslations.expenses))
-    }
     
 
     
@@ -282,15 +301,6 @@ public struct DashboardView: View {
             case .all:
                 return true
             }
-        }
-    }
-    
-    // Calcul simple du revenu pour éviter les erreurs de type-checking  
-    private var simplePeriodRevenue: Double {
-        let contracts = rentalService.rentalContracts
-        let validContracts = contracts.filter { !$0.renterName.trimmingCharacters(in: .whitespaces).isEmpty }
-        return validContracts.reduce(0.0) { total, contract in
-            total + contract.totalPrice
         }
     }
     
@@ -339,25 +349,84 @@ public struct DashboardView: View {
 
 
 
-// MARK: - Header View
-struct HeaderView: View {
-    @EnvironmentObject var localizationService: LocalizationService
+
+// MARK: - User Premium Status Badge Component
+struct UserPremiumStatusBadge: View {
+    let purchaseType: FreemiumService.PurchaseType
+    
+    private var badgeText: String {
+        switch purchaseType {
+        case .monthly:
+            return "Premium Mensuel"
+        case .yearly:
+            return "Premium Annuel"
+        case .lifetime:
+            return "Premium à Vie"
+        case .test:
+            return "Premium"
+        }
+    }
+    
+    private var badgeIcon: String {
+        switch purchaseType {
+        case .lifetime:
+            return "crown.fill"
+        case .yearly:
+            return "star.fill"
+        case .monthly:
+            return "sparkles"
+        case .test:
+            return "star.circle.fill"
+        }
+    }
+    
+    private var badgeGradient: LinearGradient {
+        switch purchaseType {
+        case .lifetime:
+            return LinearGradient(
+                colors: [Color(red: 1.0, green: 0.84, blue: 0.0), Color(red: 0.85, green: 0.65, blue: 0.13)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .yearly:
+            return LinearGradient(
+                colors: [Color.blue, Color.blue.opacity(0.8)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .monthly:
+            return LinearGradient(
+                colors: [Color.purple, Color.purple.opacity(0.8)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .test:
+            return LinearGradient(
+                colors: [Color.green, Color.green.opacity(0.8)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L(CommonTranslations.hello))
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
-                
-                Text(L(CommonTranslations.overview))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
+        HStack(spacing: 4) {
+            Image(systemName: badgeIcon)
+                .font(.system(size: 12, weight: .bold))
+            
+            Text(badgeText)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
-        .padding(.horizontal, 4)
+        .foregroundColor(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(badgeGradient)
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+        .accessibilityLabel("Abonnement \(badgeText)")
+        .accessibilityHint("Votre statut Premium actuel")
     }
 }
 
@@ -629,55 +698,65 @@ struct RecentExpensesSection: View {
 struct EmptyExpensesView: View {
     let onAddExpense: () -> Void
     @EnvironmentObject var localizationService: LocalizationService
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    
+    private var isIPad: Bool {
+        horizontalSizeClass == .regular
+    }
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Illustration
-            Image(systemName: "creditcard")
-                .font(.system(size: 48))
-                .foregroundColor(.blue.opacity(0.6))
-                .frame(width: 80, height: 80)
-                .background(Color.blue.opacity(0.1))
-                .clipShape(Circle())
-            
-            VStack(spacing: 8) {
-                Text(L(CommonTranslations.noExpenses))
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+        HStack {
+            Spacer(minLength: 0)
+            VStack(spacing: 20) {
+                // Illustration
+                Image(systemName: "creditcard")
+                    .font(.system(size: 48))
+                    .foregroundColor(.blue.opacity(0.6))
+                    .frame(width: 80, height: 80)
+                    .background(Color.blue.opacity(0.1))
+                    .clipShape(Circle())
                 
-                Text(L(CommonTranslations.addFirstExpense))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            
-            Button(action: onAddExpense) {
-                HStack {
-                    Image(systemName: "plus")
-                    Text(L(CommonTranslations.addExpense))
+                VStack(spacing: 8) {
+                    Text(L(CommonTranslations.noExpenses))
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text(L(CommonTranslations.addFirstExpense))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(
-                    LinearGradient(
-                        colors: [Color.blue, Color.blue.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                
+                Button(action: onAddExpense) {
+                    HStack {
+                        Image(systemName: "plus")
+                        Text(L(CommonTranslations.addExpense))
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.blue, Color.blue.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .clipShape(Capsule())
-                .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .clipShape(Capsule())
+                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: isIPad ? 500 : .infinity)
+            .padding(32)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+            Spacer(minLength: 0)
         }
-        .padding(32)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
 }
 

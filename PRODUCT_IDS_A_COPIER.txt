@@ -1,0 +1,83 @@
+# ═══════════════════════════════════════════════════════
+# PRODUCT IDs - À COPIER-COLLER DANS APP STORE CONNECT
+# ═══════════════════════════════════════════════════════
+
+Bundle ID:
+com.Wheel.WheelTrack
+
+Product ID 1 (Abonnement Mensuel):
+com.andygrava.wheeltrack.premium.monthly
+
+Product ID 2 (Abonnement Annuel):
+com.andygrava.wheeltrack.premium.yearly
+
+Product ID 3 (Achat à Vie):
+com.andygrava.wheeltrack.premium.lifetime
+
+# ═══════════════════════════════════════════════════════
+# SUBSCRIPTION GROUP
+# ═══════════════════════════════════════════════════════
+
+Reference Name:
+Premium Subscriptions
+
+# ═══════════════════════════════════════════════════════
+# LOCALIZATIONS - MENSUEL
+# ═══════════════════════════════════════════════════════
+
+Français:
+Display Name: WheelTrack Premium - Mensuel
+Description: Accès Premium mensuel à toutes les fonctionnalités de WheelTrack
+
+English:
+Display Name: WheelTrack Premium - Monthly
+Description: Monthly Premium access to all WheelTrack features
+
+# ═══════════════════════════════════════════════════════
+# LOCALIZATIONS - ANNUEL
+# ═══════════════════════════════════════════════════════
+
+Français:
+Display Name: WheelTrack Premium - Annuel
+Description: Accès Premium annuel à toutes les fonctionnalités de WheelTrack - Économisez 18%
+
+English:
+Display Name: WheelTrack Premium - Yearly
+Description: Yearly Premium access to all WheelTrack features - Save 18%
+
+# ═══════════════════════════════════════════════════════
+# LOCALIZATIONS - À VIE
+# ═══════════════════════════════════════════════════════
+
+Français:
+Display Name: WheelTrack Premium - À Vie
+Description: Accès Premium à vie à toutes les fonctionnalités de WheelTrack
+
+English:
+Display Name: WheelTrack Premium - Lifetime
+Description: Lifetime Premium access to all WheelTrack features
+
+# ═══════════════════════════════════════════════════════
+# PRIX SUGGÉRÉS
+# ═══════════════════════════════════════════════════════
+
+Mensuel: 4,99 € (ou 4,99 $)
+Annuel: 49,99 € (ou 49,99 $)
+À Vie: 79,99 € (ou 79,99 $)
+
+# ═══════════════════════════════════════════════════════
+# SANDBOX TESTER (exemple)
+# ═══════════════════════════════════════════════════════
+
+Email: test.wheeltrack@icloud.com
+Password: Test1234!
+Country: France
+
+# ═══════════════════════════════════════════════════════
+# TEAM ID & APP ID
+# ═══════════════════════════════════════════════════════
+
+Team ID: 5WUC3D8BMJ
+App ID: 6502148299
+Subscription Group ID: 21451234
+

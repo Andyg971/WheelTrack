@@ -4,6 +4,7 @@ struct ProfileSectionDetailView: View {
     let section: ProfileSection
     
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var localizationService: LocalizationService
     @ObservedObject private var profileService = UserProfileService.shared
     @State private var profile: UserProfile
     
@@ -32,17 +33,17 @@ struct ProfileSectionDetailView: View {
                     financialSection
                 }
             }
-            .navigationTitle(section.rawValue)
+            .navigationTitle(section.localizedName())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") {
+                    Button(L(CommonTranslations.cancel)) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") {
+                    Button(L(CommonTranslations.save)) {
                         profileService.updateProfile(profile)
                         dismiss()
                     }
@@ -55,16 +56,16 @@ struct ProfileSectionDetailView: View {
     // MARK: - Informations personnelles
     private var personalInfoSection: some View {
         Section {
-            TextField("Prénom", text: $profile.firstName)
-            TextField("Nom", text: $profile.lastName)
-            TextField("Email", text: $profile.email)
+            TextField(L(CommonTranslations.firstName), text: $profile.firstName)
+            TextField(L(CommonTranslations.lastName), text: $profile.lastName)
+            TextField(L(CommonTranslations.email), text: $profile.email)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
-            TextField("Téléphone", text: $profile.phoneNumber)
+            TextField(L(CommonTranslations.phoneNumber), text: $profile.phoneNumber)
                 .keyboardType(.phonePad)
             
             DatePicker(
-                "Date de naissance",
+                L(CommonTranslations.dateOfBirth),
                 selection: Binding(
                     get: { profile.dateOfBirth ?? Date() },
                     set: { profile.dateOfBirth = $0 }
@@ -73,19 +74,19 @@ struct ProfileSectionDetailView: View {
             )
             .datePickerStyle(.compact)
         } footer: {
-            Text("Ces informations sont utilisées pour vos documents officiels et vos assurances. L'email sert pour les notifications importantes.")
+            Text(L(CommonTranslations.personalInfoFooter))
         }
     }    
     // MARK: - Adresse
     private var addressSection: some View {
         Section {
-            TextField("Numéro et rue", text: $profile.streetAddress)
-            TextField("Ville", text: $profile.city)
-            TextField("Code postal", text: $profile.postalCode)
+            TextField(L(CommonTranslations.streetAndNumber), text: $profile.streetAddress)
+            TextField(L(CommonTranslations.city), text: $profile.city)
+            TextField(L(CommonTranslations.postalCode), text: $profile.postalCode)
                 .keyboardType(.numberPad)
-            TextField("Pays", text: $profile.country)
+            TextField(L(CommonTranslations.country), text: $profile.country)
         } footer: {
-            Text("Votre adresse est utilisée pour localiser les garages les plus proches et pour vos documents officiels.")
+            Text(L(CommonTranslations.addressFooter))
         }
     }
     
@@ -93,11 +94,11 @@ struct ProfileSectionDetailView: View {
     private var drivingLicenseSection: some View {
         Group {
             Section {
-                TextField("Numéro de permis", text: $profile.drivingLicenseNumber)
+                TextField(L(CommonTranslations.drivingLicenseNumber), text: $profile.drivingLicenseNumber)
                     .textInputAutocapitalization(.characters)
                 
                 DatePicker(
-                    "Date d'obtention",
+                    L(CommonTranslations.licenseObtainedDate),
                     selection: Binding(
                         get: { profile.licenseObtainedDate ?? Date() },
                         set: { profile.licenseObtainedDate = $0 }
@@ -107,7 +108,7 @@ struct ProfileSectionDetailView: View {
                 .datePickerStyle(.compact)
                 
                 DatePicker(
-                    "Date d'expiration",
+                    L(CommonTranslations.licenseExpirationDate),
                     selection: Binding(
                         get: { profile.licenseExpirationDate ?? Calendar.current.date(byAdding: .year, value: 15, to: Date()) ?? Date() },
                         set: { profile.licenseExpirationDate = $0 }
@@ -116,57 +117,57 @@ struct ProfileSectionDetailView: View {
                 )
                 .datePickerStyle(.compact)
             } header: {
-                Text("Informations du permis")
+                Text(L(CommonTranslations.licenseInformation))
             } footer: {
-                Text("Ces informations sont essentielles pour la location de véhicules et les contrôles routiers.")
+                Text(L(CommonTranslations.licenseInfoFooter))
             }
             
             Section {
-                ForEach(licenseCategories, id: \.self) { category in
+                ForEach(licenseCategories) { categoryItem in
                     HStack {
-                        Text("Catégorie \(category.code)")
+                        Text("\(L(CommonTranslations.category)) \(categoryItem.code)")
                             .fontWeight(.medium)
                         
                         Spacer()
                         
                         Toggle("", isOn: Binding(
-                            get: { profile.licenseCategories.contains(category.code) },
+                            get: { profile.licenseCategories.contains(categoryItem.code) },
                             set: { isSelected in
                                 if isSelected {
-                                    if !profile.licenseCategories.contains(category.code) {
-                                        profile.licenseCategories.append(category.code)
+                                    if !profile.licenseCategories.contains(categoryItem.code) {
+                                        profile.licenseCategories.append(categoryItem.code)
                                     }
                                 } else {
-                                    profile.licenseCategories.removeAll { $0 == category.code }
+                                    profile.licenseCategories.removeAll { $0 == categoryItem.code }
                                 }
                             }
                         ))
                     }
                     
-                    if !category.description.isEmpty {
-                        Text(category.description)
+                    if !categoryItem.localizedDescription(localizationService).isEmpty {
+                        Text(categoryItem.localizedDescription(localizationService))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
             } header: {
-                Text("Catégories autorisées")
+                Text(L(CommonTranslations.authorizedCategories))
             } footer: {
-                Text("Sélectionnez les catégories de véhicules que vous êtes autorisé(e) à conduire.")
+                Text(L(CommonTranslations.licenseCategoriesFooter))
             }
         }
     }    
     // MARK: - Assurance
     private var insuranceSection: some View {
         Section {
-            TextField("Compagnie d'assurance", text: $profile.insuranceCompany)
-            TextField("Numéro de police", text: $profile.insurancePolicyNumber)
+            TextField(L(CommonTranslations.insuranceCompany), text: $profile.insuranceCompany)
+            TextField(L(CommonTranslations.policyNumber), text: $profile.insurancePolicyNumber)
                 .textInputAutocapitalization(.characters)
-            TextField("Téléphone assurance", text: $profile.insuranceContactPhone)
+            TextField(L(CommonTranslations.insuranceContactPhone), text: $profile.insuranceContactPhone)
                 .keyboardType(.phonePad)
             
             DatePicker(
-                "Date d'expiration",
+                L(CommonTranslations.insuranceExpirationDate),
                 selection: Binding(
                     get: { profile.insuranceExpirationDate ?? Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date() },
                     set: { profile.insuranceExpirationDate = $0 }
@@ -175,18 +176,18 @@ struct ProfileSectionDetailView: View {
             )
             .datePickerStyle(.compact)
         } footer: {
-            Text("Ces informations sont cruciales en cas d'accident ou de sinistre. Vous recevrez des rappels avant l'expiration.")
+            Text(L(CommonTranslations.insuranceFooter))
         }
     }
     
     // MARK: - Informations professionnelles
     private var professionalSection: some View {
         Section {
-            TextField("Profession", text: $profile.profession)
-            TextField("Entreprise", text: $profile.company)
+            TextField(L(CommonTranslations.profession), text: $profile.profession)
+            TextField(L(CommonTranslations.company), text: $profile.company)
             
             HStack {
-                Text("Usage professionnel")
+                Text(L(CommonTranslations.professionalUse))
                     .fontWeight(.medium)
                 
                 Spacer()
@@ -200,7 +201,7 @@ struct ProfileSectionDetailView: View {
                 in: 0...100,
                 step: 5
             ) {
-                Text("Usage professionnel")
+                Text(L(CommonTranslations.professionalUse))
             } minimumValueLabel: {
                 Text("0%")
                     .font(.caption)
@@ -211,7 +212,7 @@ struct ProfileSectionDetailView: View {
                     .foregroundColor(.secondary)
             }
         } footer: {
-            Text("Le pourcentage d'usage professionnel est utilisé pour calculer les déductions fiscales et la répartition des frais.")
+            Text(L(CommonTranslations.professionalUseFooter))
         }
     }
     
@@ -219,44 +220,44 @@ struct ProfileSectionDetailView: View {
     private var preferencesSection: some View {
         Group {
             Section {
-                Picker("Devise", selection: $profile.preferredCurrency) {
-                    Text("Euro (€)").tag("EUR")
-                    Text("Dollar ($)").tag("USD")
-                    Text("Livre (£)").tag("GBP")
-                    Text("Franc suisse (CHF)").tag("CHF")
+                Picker(L(CommonTranslations.currency), selection: $profile.preferredCurrency) {
+                    Text(L(CommonTranslations.euroCurrency)).tag("EUR")
+                    Text(L(CommonTranslations.dollarCurrency)).tag("USD")
+                    Text(L(CommonTranslations.poundCurrency)).tag("GBP")
+                    Text(L(CommonTranslations.swissFrancCurrency)).tag("CHF")
                 }
                 
-                Picker("Unité de distance", selection: $profile.distanceUnit) {
+                Picker(L(CommonTranslations.distanceUnit), selection: $profile.distanceUnit) {
                     ForEach(DistanceUnit.allCases, id: \.self) { unit in
                         Text(unit.displayName).tag(unit)
                     }
                 }
                 
-                Picker("Consommation carburant", selection: $profile.fuelConsumptionUnit) {
+                Picker(L(CommonTranslations.fuelConsumption), selection: $profile.fuelConsumptionUnit) {
                     ForEach(FuelConsumptionUnit.allCases, id: \.self) { unit in
                         Text(unit.displayName).tag(unit)
                     }
                 }
                 
-                Picker("Langue", selection: $profile.language) {
-                    Text("Français").tag("fr")
-                    Text("English").tag("en")
-                    Text("Español").tag("es")
-                    Text("Deutsch").tag("de")
+                Picker(L(CommonTranslations.languageSetting), selection: $profile.language) {
+                    Text(L(CommonTranslations.french)).tag("fr")
+                    Text(L(CommonTranslations.english)).tag("en")
+                    Text(L(CommonTranslations.spanish)).tag("es")
+                    Text(L(CommonTranslations.german)).tag("de")
                 }
             } header: {
-                Text("Unités et langue")
+                Text(L(CommonTranslations.unitsAndLanguage))
             }
             
             Section {
-                Toggle("Notifications", isOn: $profile.enableNotifications)
-                Toggle("Rappels maintenance", isOn: $profile.enableMaintenanceReminders)
-                Toggle("Rappels assurance", isOn: $profile.enableInsuranceReminders)
-                Toggle("Rappels permis", isOn: $profile.enableLicenseReminders)
+                Toggle(L(CommonTranslations.notifications), isOn: $profile.enableNotifications)
+                Toggle(L(CommonTranslations.maintenanceReminders), isOn: $profile.enableMaintenanceReminders)
+                Toggle(L(CommonTranslations.insuranceReminders), isOn: $profile.enableInsuranceReminders)
+                Toggle(L(CommonTranslations.licenseReminders), isOn: $profile.enableLicenseReminders)
             } header: {
-                Text("Notifications")
+                Text(L(CommonTranslations.notifications))
             } footer: {
-                Text("Activez les notifications pour ne manquer aucune échéance importante.")
+                Text(L(CommonTranslations.notificationsFooter))
             }
         }
     }    
@@ -264,12 +265,12 @@ struct ProfileSectionDetailView: View {
     private var financialSection: some View {
         Section {
             HStack {
-                Text("Taux de TVA")
+                Text(L(CommonTranslations.vatRate))
                     .fontWeight(.medium)
                 
                 Spacer()
                 
-                TextField("TVA", value: $profile.defaultVATRate, format: .number)
+                TextField(L(CommonTranslations.vat), value: $profile.defaultVATRate, format: .number)
                     .keyboardType(.decimalPad)
                     .frame(width: 60)
                     .multilineTextAlignment(.trailing)
@@ -279,12 +280,12 @@ struct ProfileSectionDetailView: View {
             }
             
             HStack {
-                Text("Déduction professionnelle")
+                Text(L(CommonTranslations.professionalDeduction))
                     .fontWeight(.medium)
                 
                 Spacer()
                 
-                TextField("Déduction", value: $profile.professionalDeductionRate, format: .number)
+                TextField(L(CommonTranslations.deduction), value: $profile.professionalDeductionRate, format: .number)
                     .keyboardType(.decimalPad)
                     .frame(width: 60)
                     .multilineTextAlignment(.trailing)
@@ -294,38 +295,52 @@ struct ProfileSectionDetailView: View {
             }
             
             HStack {
-                Text("Budget mensuel véhicule")
+                Text(L(CommonTranslations.monthlyVehicleBudget))
                     .fontWeight(.medium)
                 
                 Spacer()
                 
-                TextField("Budget", value: $profile.monthlyVehicleBudget, format: .currency(code: profile.preferredCurrency))
+                TextField(L(CommonTranslations.budget), value: $profile.monthlyVehicleBudget, format: .currency(code: profile.preferredCurrency))
                     .keyboardType(.decimalPad)
                     .frame(width: 100)
                     .multilineTextAlignment(.trailing)
             }
         } footer: {
-            Text("Ces paramètres sont utilisés pour les calculs automatiques de coûts et les rapports financiers.")
+            Text(L(CommonTranslations.financialFooter))
         }
     }
     
     // MARK: - Données de support
     private let licenseCategories = [
-        LicenseCategory(code: "A", description: "Motos"),
-        LicenseCategory(code: "B", description: "Voitures particulières"),
-        LicenseCategory(code: "C", description: "Poids lourds"),
-        LicenseCategory(code: "D", description: "Transport en commun"),
-        LicenseCategory(code: "BE", description: "Voiture avec remorque"),
-        LicenseCategory(code: "CE", description: "Poids lourd avec remorque")
+        LicenseCategory(code: "A", translationKey: CommonTranslations.licenseCategoryA),
+        LicenseCategory(code: "B", translationKey: CommonTranslations.licenseCategoryB),
+        LicenseCategory(code: "C", translationKey: CommonTranslations.licenseCategoryC),
+        LicenseCategory(code: "D", translationKey: CommonTranslations.licenseCategoryD),
+        LicenseCategory(code: "BE", translationKey: CommonTranslations.licenseCategoryBE),
+        LicenseCategory(code: "CE", translationKey: CommonTranslations.licenseCategoryCE)
     ]
 }
 
 // MARK: - Structure de support
-private struct LicenseCategory: Hashable {
+private struct LicenseCategory: Identifiable {
+    let id: String
     let code: String
-    let description: String
+    let frenchDescription: String
+    let englishDescription: String
+    
+    init(code: String, translationKey: (String, String)) {
+        self.id = code
+        self.code = code
+        self.frenchDescription = translationKey.0
+        self.englishDescription = translationKey.1
+    }
+    
+    func localizedDescription(_ localizationService: LocalizationService) -> String {
+        return localizationService.text(frenchDescription, englishDescription)
+    }
 }
 
 #Preview {
     ProfileSectionDetailView(section: .personalInfo)
+        .environmentObject(LocalizationService.shared)
 }

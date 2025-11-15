@@ -26,6 +26,7 @@ class GaragesViewModel: ObservableObject {
     
     private let cloudKitService = CloudKitGarageService()
     private let locationService = LocationService.shared
+    private let cloudKitCache = CloudKitCacheService()
     
     // ✅ Cache pour optimiser les performances
     private var cachedGarages: [Garage] = []
@@ -257,6 +258,74 @@ class GaragesViewModel: ObservableObject {
         print("⚠️ toggleFavorite désactivé - favoris gérés via UserDefaults dans la vue")
     }
     
+    // MARK: - Chargement des horaires à la demande
+    
+    // Cache des horaires avec durée de validité (24h)
+    private let hoursTTL: TimeInterval = 86_400
+    private var hoursCache: [String: (value: String, date: Date)] = [:]
+    
+    /// Charge les horaires d'un garage à la demande, avec cache local, CloudKit partagé et Google API
+    func fetchHours(for garage: Garage) async -> String {
+        let cacheKey = "\(garage.nom)|\(garage.latitude),\(garage.longitude)"
+        
+        // 1) Vérifier le cache local en mémoire (le plus rapide)
+        if let entry = hoursCache[cacheKey], Date().timeIntervalSince(entry.date) < hoursTTL {
+            print("✅ Horaires chargés depuis le cache local pour: \(garage.nom)")
+            return entry.value
+        }
+        
+        // 2) Vérifier le cache CloudKit partagé (évite les appels Google)
+        if let cloudKitHours = await cloudKitCache.loadHours(placeKey: cacheKey) {
+            // Mettre à jour le cache local
+            hoursCache[cacheKey] = (cloudKitHours, Date())
+            
+            // Mettre à jour l'UI
+            await updateGarageHours(garage: garage, hours: cloudKitHours)
+            return cloudKitHours
+        }
+        
+        // 3) Appel Google Places API (Text Search -> Details)
+        let result = await getRealBusinessHours(
+            name: garage.nom,
+            location: CLLocationCoordinate2D(latitude: garage.latitude, longitude: garage.longitude)
+        )
+        let value = result ?? L(("Horaires non disponibles", "Hours not available"))
+        
+        // 4) Mettre à jour les caches (local + CloudKit partagé)
+        hoursCache[cacheKey] = (value, Date())
+        
+        // Sauvegarder dans CloudKit pour les autres utilisateurs (best effort)
+        Task.detached(priority: .background) {
+            await self.cloudKitCache.saveHours(placeKey: cacheKey, hours: value)
+        }
+        
+        // 5) Mettre à jour l'UI
+        await updateGarageHours(garage: garage, hours: value)
+        
+        return value
+    }
+    
+    /// Met à jour les horaires d'un garage dans la liste
+    private func updateGarageHours(garage: Garage, hours: String) async {
+        await MainActor.run {
+            if let idx = garages.firstIndex(where: { $0.id == garage.id }) {
+                let updated = Garage(
+                    id: garages[idx].id,
+                    nom: garages[idx].nom,
+                    adresse: garages[idx].adresse,
+                    ville: garages[idx].ville,
+                    telephone: garages[idx].telephone,
+                    services: garages[idx].services,
+                    horaires: hours,
+                    latitude: garages[idx].latitude,
+                    longitude: garages[idx].longitude,
+                    isFavorite: garages[idx].isFavorite
+                )
+                garages[idx] = updated
+            }
+        }
+    }
+    
     // MARK: - Méthodes privées
     
     /// Trouve de vrais garages autour de la position utilisateur avec MapKit (PARALLÉLISÉ)
@@ -300,10 +369,8 @@ class GaragesViewModel: ObservableObject {
         
         print("🏢 \(realGarages.count) vrais garages trouvés en parallèle dans un rayon de \(radiusKm)km")
         
-        // Charger les horaires en arrière-plan après l'affichage initial
-        Task {
-            await loadBusinessHoursInBackground(for: realGarages)
-        }
+        // ✅ Horaires désactivés en arrière-plan - chargement à la demande uniquement
+        // Les horaires seront chargés quand l'utilisateur clique sur "Afficher les horaires"
         
         return realGarages
     }
@@ -433,12 +500,12 @@ class GaragesViewModel: ObservableObject {
     
     /// Trouve le place_id Google pour un établissement
     private func findGooglePlaceId(name: String, location: CLLocationCoordinate2D) async -> String? {
-        // Clé API Google Places configurée
-        let apiKey = "VOTRE_CLE_API_ICI
+        // Clé API Google Places depuis Secrets.plist
+        let apiKey = Secrets.googlePlacesKey
         
         // Si pas de clé API configurée, retourner nil
-        guard apiKey != "COLLEZ_VOTRE_CLE_API_ICI" else {
-            print("⚠️ Clé API Google Places non configurée")
+        guard !apiKey.isEmpty else {
+            print("⚠️ Clé API Google Places non configurée dans Secrets.plist")
             return nil
         }
         
@@ -478,9 +545,9 @@ class GaragesViewModel: ObservableObject {
     
     /// Récupère les détails d'un lieu Google incluant les horaires
     private func getPlaceDetails(placeId: String) async -> String? {
-        let apiKey = "VOTRE_CLE_API_ICI
+        let apiKey = Secrets.googlePlacesKey
         
-        guard apiKey != "COLLEZ_VOTRE_CLE_API_ICI" else {
+        guard !apiKey.isEmpty else {
             return nil
         }
         

@@ -33,7 +33,7 @@ NavigationLink("Test StoreKit", destination: StoreKitTestView())
 ### Étape 2: Configuration Locale
 1. Le fichier `Configuration.storekit` permet de tester sans App Store Connect
 2. Xcode utilisera automatiquement ce fichier en développement
-3. Les prix et produits sont simulés localement (4,99€ mensuel, 49,99€ annuel, 19,99€ lifetime)
+3. Les prix et produits sont simulés localement (4,99€ mensuel, 49,99€ annuel, 79,99€ lifetime)
 
 ### Étape 3: Validation de Configuration
 ```swift
@@ -92,9 +92,9 @@ do {
    - Configurer les métadonnées de base
 
 2. **Créer les Produits IAP** :
-   - `wheeltrack_premium_monthly` (Auto-Renewable)
-   - `wheeltrack_premium_yearly` (Auto-Renewable)  
-   - `wheeltrack_premium_lifetime` (Non-Consumable)
+   - `com.andygrava.wheeltrack.premium.monthly` (Auto-Renewable)
+   - `com.andygrava.wheeltrack.premium.yearly` (Auto-Renewable)  
+   - `com.andygrava.wheeltrack.premium.lifetime` (Non-Consumable)
 
 3. **Groupe d'Abonnements** :
    - Créer un groupe pour les abonnements

@@ -2,6 +2,8 @@ import Foundation
 import StoreKit
 import Combine
 
+
+
 /// Service de gestion des achats in-app avec StoreKit 2
 @MainActor
 public class StoreKitService: ObservableObject {
@@ -15,9 +17,9 @@ public class StoreKitService: ObservableObject {
     
     // MARK: - Product IDs
     public enum ProductID: String, CaseIterable {
-        case monthlySubscription = "wheeltrack_premium_monthly"
-        case yearlySubscription = "wheeltrack_premium_yearly"
-        case lifetimePurchase = "wheeltrack_premium_lifetime"
+        case monthlySubscription = "com.andygrava.wheeltrack.premium.monthly"
+        case yearlySubscription = "com.andygrava.wheeltrack.premium.yearly"
+        case lifetimePurchase = "com.andygrava.wheeltrack.premium.lifetime"
         
         var displayName: String {
             switch self {
@@ -65,6 +67,25 @@ public class StoreKitService: ObservableObject {
             let storeProducts = try await Product.products(for: productIDs)
             print("✅ Produits récupérés depuis StoreKit: \(storeProducts.count)")
             
+            // Vérifier que tous les produits attendus sont présents
+            await MainActor.run {
+                let loadedIDs = Set(storeProducts.map { $0.id })
+                let expectedIDs = Set(productIDs)
+                let missingIDs = expectedIDs.subtracting(loadedIDs)
+                
+                if !missingIDs.isEmpty {
+                    print("⚠️ Produits manquants: \(missingIDs)")
+                    errorMessage = "Certains produits ne sont pas disponibles"
+                }
+                
+                // Vérifier spécifiquement le produit lifetime
+                if !loadedIDs.contains(ProductID.lifetimePurchase.rawValue) {
+                    print("❌ ATTENTION: Produit lifetime NON chargé!")
+                } else {
+                    print("✅ Produit lifetime chargé correctement")
+                }
+            }
+            
             // Trier les produits : mensuel, annuel, lifetime
             let sortedProducts = storeProducts.sorted { product1, product2 in
                 let order = [ProductID.monthlySubscription.rawValue, ProductID.yearlySubscription.rawValue, ProductID.lifetimePurchase.rawValue]
@@ -78,6 +99,9 @@ public class StoreKitService: ObservableObject {
             // Log détaillé des produits chargés
             for product in sortedProducts {
                 print("📦 Produit: \(product.id) - Nom: \(product.displayName) - Prix: \(product.displayPrice)")
+                if product.id.contains("lifetime") {
+                    print("💎 Badge PREMIUM devrait être affiché pour ce produit")
+                }
             }
             
             print("✅ Produits chargés et triés: \(products.map { $0.id })")
@@ -96,6 +120,8 @@ public class StoreKitService: ObservableObject {
         
         isLoading = false
     }
+    
+
     
     // MARK: - Purchase Management
     
@@ -130,6 +156,14 @@ public class StoreKitService: ObservableObject {
                 
                 // Déclencher la pop-up de succès
                 await triggerPurchaseSuccessPopup(for: product.id)
+                
+                // ✅ FORCER la mise à jour immédiate du statut Premium
+                await MainActor.run {
+                    FreemiumService.shared.isPremium = true
+                    FreemiumService.shared.currentPurchaseType = getPurchaseTypeFromProductID(product.id)
+                    FreemiumService.shared.savePremiumStatus()
+                    print("🚀 Statut Premium activé immédiatement après achat: \(product.id)")
+                }
                 
                 print("✅ Achat complet réussi: \(product.id)")
                 return true
@@ -304,7 +338,7 @@ public class StoreKitService: ObservableObject {
     /// Prix mensuel équivalent pour l'abonnement annuel
     public func yearlyMonthlyEquivalent() -> String {
         guard let yearly = product(for: .yearlySubscription) else {
-            return "4,08€/mois"
+            return "4,17€/mois"
         }
         
         let monthlyPrice = yearly.price / 12
@@ -312,26 +346,29 @@ public class StoreKitService: ObservableObject {
         formatter.numberStyle = .currency
         formatter.locale = yearly.priceFormatStyle.locale
         
-        return (formatter.string(from: monthlyPrice as NSDecimalNumber) ?? "4,08€") + "/mois"
+        return (formatter.string(from: monthlyPrice as NSDecimalNumber) ?? "4,17€") + "/mois"
     }
     
     /// Déclenche la pop-up de succès d'achat
     private func triggerPurchaseSuccessPopup(for productID: String) async {
-        let purchaseType: FreemiumService.PurchaseType
-        
-        switch productID {
-        case ProductID.monthlySubscription.rawValue:
-            purchaseType = .monthly
-        case ProductID.yearlySubscription.rawValue:
-            purchaseType = .yearly
-        case ProductID.lifetimePurchase.rawValue:
-            purchaseType = .lifetime
-        default:
-            purchaseType = .test
-        }
+        let purchaseType: FreemiumService.PurchaseType = getPurchaseTypeFromProductID(productID)
         
         await MainActor.run {
             FreemiumService.shared.showPurchaseSuccessPopup(purchaseType: purchaseType, productID: productID)
+        }
+    }
+    
+    /// Convertit un Product ID en PurchaseType
+    private func getPurchaseTypeFromProductID(_ productID: String) -> FreemiumService.PurchaseType {
+        switch productID {
+        case ProductID.monthlySubscription.rawValue:
+            return .monthly
+        case ProductID.yearlySubscription.rawValue:
+            return .yearly
+        case ProductID.lifetimePurchase.rawValue:
+            return .lifetime
+        default:
+            return .test
         }
     }
 }

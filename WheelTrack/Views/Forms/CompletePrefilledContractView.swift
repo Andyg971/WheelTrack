@@ -16,6 +16,7 @@ struct CompletePrefilledContractView: View {
     @State private var showingValidationAlert = false
     @State private var validationMessage = ""
     @State private var isLoading = false
+    @State private var showImmediateStartDialog = false
     
     private var isFormValid: Bool {
         !renterName.trimmingCharacters(in: .whitespaces).isEmpty
@@ -108,7 +109,11 @@ struct CompletePrefilledContractView: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Activer") {
-                        completeContract()
+                        if contract.startDate > Date() {
+                            showImmediateStartDialog = true
+                        } else {
+                            completeContract()
+                        }
                     }
                     .disabled(!isFormValid || isLoading)
                     .fontWeight(.semibold)
@@ -138,6 +143,19 @@ struct CompletePrefilledContractView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .shadow(radius: 10)
                 }
+            }
+            .confirmationDialog(
+                L(CommonTranslations.futureStartDate),
+                isPresented: $showImmediateStartDialog,
+                titleVisibility: .visible
+            ) {
+                Button(L(CommonTranslations.startNow)) {
+                    completeContract(forceStartNow: true)
+                }
+                Button(L(CommonTranslations.keepPlannedDate)) {
+                    completeContract(forceStartNow: false)
+                }
+                Button(L(CommonTranslations.cancel), role: .cancel) { }
             }
         }
     }
@@ -193,7 +211,7 @@ struct CompletePrefilledContractView: View {
     
     // MARK: - Actions
     
-    private func completeContract() {
+    private func completeContract(forceStartNow: Bool = false) {
         guard isFormValid else { return }
         
         isLoading = true
@@ -203,12 +221,25 @@ struct CompletePrefilledContractView: View {
             "Véhicule en bon état général. État détaillé à compléter lors de la remise des clés." : 
             conditionReport
         
+        let now = Date()
+        var adjustedStartDate = contract.startDate
+        var adjustedEndDate = contract.endDate
+        
+        // Forcer l'activation immédiate si demandé et si la date de début est future
+        if forceStartNow && adjustedStartDate > now {
+            adjustedStartDate = now
+            // Sécurité: s'assurer que la fin est après le début
+            if adjustedEndDate <= adjustedStartDate {
+                adjustedEndDate = Calendar.current.date(byAdding: .day, value: 1, to: adjustedStartDate) ?? adjustedStartDate.addingTimeInterval(86_400)
+            }
+        }
+        
         let completedContract = RentalContract(
             id: contract.id,
             vehicleId: contract.vehicleId,
             renterName: renterName.trimmingCharacters(in: .whitespacesAndNewlines),
-            startDate: contract.startDate,
-            endDate: contract.endDate,
+            startDate: adjustedStartDate,
+            endDate: adjustedEndDate,
             pricePerDay: contract.pricePerDay,
             totalPrice: contract.totalPrice,
             conditionReport: updatedConditionReport

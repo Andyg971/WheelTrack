@@ -6,6 +6,7 @@ struct PremiumUpgradeAlert: View {
     let feature: FreemiumService.PremiumFeature
     @ObservedObject private var freemiumService = FreemiumService.shared
     @ObservedObject private var storeKitService = StoreKitService.shared
+    @ObservedObject private var localizationService = LocalizationService.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showFullUpgradeView = false
     
@@ -32,7 +33,7 @@ struct PremiumUpgradeAlert: View {
                         .foregroundColor(.white)
                 }
                 
-                Text("💎 Premium Requis")
+                Text(L(CommonTranslations.premiumRequired))
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
@@ -53,25 +54,25 @@ struct PremiumUpgradeAlert: View {
                 VStack(alignment: .leading, spacing: 8) {
                     PremiumBenefitRow(
                         icon: "infinity.circle.fill",
-                        text: "Véhicules illimités",
+                        text: L(CommonTranslations.unlimitedVehicles),
                         color: .blue
                     )
                     
                     PremiumBenefitRow(
                         icon: "chart.bar.xaxis",
-                        text: "Analytics professionnels",
+                        text: L(CommonTranslations.professionalAnalytics),
                         color: .green
                     )
                     
                     PremiumBenefitRow(
                         icon: "key.radiowaves.forward.fill",
-                        text: "Module Location complet",
+                        text: L(CommonTranslations.fullRentalModule),
                         color: .orange
                     )
                     
                     PremiumBenefitRow(
                         icon: "icloud.fill",
-                        text: "Synchronisation iCloud",
+                        text: L(CommonTranslations.iCloudSync),
                         color: .purple
                     )
                 }
@@ -84,32 +85,48 @@ struct PremiumUpgradeAlert: View {
             
             // Options de pricing avec version à vie
             VStack(spacing: 12) {
-                // Vérifier si les produits sont chargés
-                if storeKitService.products.isEmpty {
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                        
-                        Text("Chargement des options...")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Button("Recharger les produits") {
-                            Task {
-                                await storeKitService.loadProducts()
+                                        // ✅ Mode démo pour captures d'écran App Store (remplace les produits vides)
+                        if storeKitService.products.isEmpty {
+                            // Afficher des options de pricing démo avec vrais prix
+                            VStack(spacing: 12) {
+                                DemoPricingOptionView(
+                                    title: L(CommonTranslations.monthlyPremium),
+                                    subtitle: L(CommonTranslations.billedMonthly),
+                                    price: localizationService.currentLanguage == "en" ? "$3.99" : "4,99 €",
+                                    originalPrice: nil
+                                ) {
+                                    // Action démo pour capture d'écran
+                                }
+                                
+                                DemoPricingOptionView(
+                                    title: L(CommonTranslations.yearlyPremium),
+                                    subtitle: L(CommonTranslations.save17Percent),
+                                    price: localizationService.currentLanguage == "en" ? "$39.99" : "49,99 €",
+                                    originalPrice: localizationService.currentLanguage == "en" ? "$47.88" : "59,88 €",
+                                    isPopular: true
+                                ) {
+                                    // Action démo pour capture d'écran
+                                }
+                                
+                                DemoPricingOptionView(
+                                    title: L(CommonTranslations.lifetimePremium),
+                                    subtitle: L(CommonTranslations.oneTimePurchaseAccess),
+                                    price: localizationService.currentLanguage == "en" ? "$79.99" : "79,99 €",
+                                    originalPrice: nil
+                                ) {
+                                    // Action démo pour capture d'écran
+                                }
                             }
-                        }
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                    }
+                            
+
                     .padding()
                     .frame(maxWidth: .infinity)
                 } else {
                     // Premium Mensuel
                     if let monthlyProduct = storeKitService.product(for: .monthlySubscription) {
                         PricingOptionView(
-                            title: "Premium Mensuel",
-                            subtitle: "Facturé mensuellement",
+                            title: L(CommonTranslations.monthlyPremium),
+                            subtitle: L(CommonTranslations.billedMonthly),
                             price: monthlyProduct.displayPrice,
                             isPopular: false,
                             isLoading: storeKitService.isLoading,
@@ -127,10 +144,10 @@ struct PremiumUpgradeAlert: View {
                     // Premium Annuel (Populaire)
                     if let yearlyProduct = storeKitService.product(for: .yearlySubscription) {
                         PricingOptionView(
-                            title: "Premium Annuel",
-                            subtitle: "Facturé annuellement",
+                            title: L(CommonTranslations.yearlyPremium),
+                            subtitle: L(CommonTranslations.billedYearly),
                             price: yearlyProduct.displayPrice,
-                            badge: "Économisez 18%",
+                            badge: L(CommonTranslations.save18Percent),
                             priceDetail: storeKitService.yearlyMonthlyEquivalent(),
                             isPopular: true,
                             isLoading: storeKitService.isLoading,
@@ -148,10 +165,10 @@ struct PremiumUpgradeAlert: View {
                     // Premium à Vie
                     if let lifetimeProduct = storeKitService.product(for: .lifetimePurchase) {
                         PricingOptionView(
-                            title: "Premium à Vie",
-                            subtitle: "Achat unique",
+                            title: L(CommonTranslations.lifetimePremium),
+                            subtitle: L(CommonTranslations.oneTimePurchase),
                             price: lifetimeProduct.displayPrice,
-                            badge: "Une seule fois",
+                            badge: L(CommonTranslations.premiumBadge),
                             isLifetime: true,
                             isLoading: storeKitService.isLoading,
                             action: {
@@ -170,13 +187,13 @@ struct PremiumUpgradeAlert: View {
             // Boutons d'action
             VStack(spacing: 12) {
                 // Bouton pour ouvrir la vue d'achat complète
-                Button("Voir toutes les options") {
+                Button(L(CommonTranslations.seeAllOptions)) {
                     showFullUpgradeView = true
                 }
                 .font(.subheadline)
                 .foregroundColor(.blue)
                 
-                Button("Plus tard") {
+                Button(L(CommonTranslations.later)) {
                     dismiss()
                 }
                 .font(.subheadline)
@@ -252,6 +269,7 @@ struct PremiumUpgradeView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var freemiumService = FreemiumService.shared
     @ObservedObject private var storeKitService = StoreKitService.shared
+    @ObservedObject private var localizationService = LocalizationService.shared
     
     private let wheelTrackBlue = Color(red: 0.2, green: 0.7, blue: 1.0)
     
@@ -264,7 +282,7 @@ struct PremiumUpgradeView: View {
                         HStack {
                             Image(systemName: "crown.fill")
                                 .foregroundColor(.yellow)
-                            Text("💎 WHEELTRACK PREMIUM")
+                            Text(L(CommonTranslations.wheeltrackPremium))
                                 .font(.caption)
                                 .fontWeight(.bold)
                                 .foregroundColor(wheelTrackBlue)
@@ -280,12 +298,12 @@ struct PremiumUpgradeView: View {
                                 )
                         )
                         
-                        Text("Débloquez tout le potentiel de WheelTrack")
+                        Text(L(CommonTranslations.unlockFullPotential))
                             .font(.title2)
                             .fontWeight(.bold)
                             .multilineTextAlignment(.center)
                         
-                        Text("Gestion professionnelle avec analytics avancés")
+                        Text(L(CommonTranslations.professionalManagement))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -300,43 +318,43 @@ struct PremiumUpgradeView: View {
                         
                         FeatureCard(
                             icon: "infinity.circle.fill",
-                            title: "Véhicules illimités",
-                            subtitle: "Gérez toute votre flotte",
+                            title: L(CommonTranslations.unlimitedVehicles),
+                            subtitle: L(CommonTranslations.manageFleetText),
                             color: .blue
                         )
                         
                         FeatureCard(
                             icon: "chart.bar.fill",
-                            title: "Analytics Pro",
-                            subtitle: "Graphiques détaillés",
+                            title: L(CommonTranslations.analyticsPro),
+                            subtitle: L(CommonTranslations.detailedGraphs),
                             color: .green
                         )
                         
                         FeatureCard(
                             icon: "key.radiowaves.forward.fill",
-                            title: "Module Location",
-                            subtitle: "Contrats & revenus",
+                            title: L(CommonTranslations.rentalModule),
+                            subtitle: L(CommonTranslations.contractsRevenue),
                             color: .orange
                         )
                         
                         FeatureCard(
                             icon: "doc.text.fill",
-                            title: "Export PDF",
-                            subtitle: "Rapports complets",
+                            title: L(CommonTranslations.exportPdf),
+                            subtitle: L(CommonTranslations.completeReports),
                             color: .red
                         )
                         
                         FeatureCard(
                             icon: "building.2.fill",
-                            title: "Garages Pro",
-                            subtitle: "Favoris illimités",
+                            title: L(CommonTranslations.garagesPro),
+                            subtitle: L(CommonTranslations.unlimitedFavorites),
                             color: .purple
                         )
                         
                         FeatureCard(
                             icon: "icloud.fill",
-                            title: "Sync iCloud",
-                            subtitle: "Multi-appareils",
+                            title: L(CommonTranslations.syncIcloud),
+                            subtitle: L(CommonTranslations.multiDevice),
                             color: .indigo
                         )
                     }
@@ -346,8 +364,8 @@ struct PremiumUpgradeView: View {
                         // Premium Mensuel
                         if let monthlyProduct = storeKitService.product(for: .monthlySubscription) {
                             PricingOptionView(
-                                title: "Premium Mensuel",
-                                subtitle: "Facturé mensuellement",
+                                title: L(CommonTranslations.monthlyPremium),
+                                subtitle: L(CommonTranslations.billedMonthly),
                                 price: monthlyProduct.displayPrice,
                                 isPopular: false,
                                 isLoading: storeKitService.isLoading,
@@ -365,10 +383,10 @@ struct PremiumUpgradeView: View {
                         // Premium Annuel (Populaire)
                         if let yearlyProduct = storeKitService.product(for: .yearlySubscription) {
                             PricingOptionView(
-                                title: "Premium Annuel",
-                                subtitle: "Facturé annuellement",
+                                title: L(CommonTranslations.yearlyPremium),
+                                subtitle: L(CommonTranslations.billedYearly),
                                 price: yearlyProduct.displayPrice,
-                                badge: "Économisez 18%",
+                                badge: L(CommonTranslations.save18Percent),
                                 priceDetail: storeKitService.yearlyMonthlyEquivalent(),
                                 isPopular: true,
                                 isLoading: storeKitService.isLoading,
@@ -386,10 +404,10 @@ struct PremiumUpgradeView: View {
                         // Premium à Vie
                         if let lifetimeProduct = storeKitService.product(for: .lifetimePurchase) {
                             PricingOptionView(
-                                title: "Premium à Vie",
-                                subtitle: "Achat unique",
+                                title: L(CommonTranslations.lifetimePremium),
+                                subtitle: L(CommonTranslations.oneTimePurchase),
                                 price: lifetimeProduct.displayPrice,
-                                badge: "Une seule fois",
+                                badge: L(CommonTranslations.premiumBadge),
                                 isLifetime: true,
                                 isLoading: storeKitService.isLoading,
                                 action: {
@@ -412,47 +430,19 @@ struct PremiumUpgradeView: View {
                         } label: {
                             HStack {
                                 Image(systemName: "arrow.clockwise")
-                                Text("Restaurer les achats")
+                                Text(L(CommonTranslations.restorePurchases))
                             }
                             .font(.subheadline)
                             .foregroundColor(wheelTrackBlue)
                         }
                     
-                    // Bouton temporaire pour tests
-                    #if DEBUG
-                    if !freemiumService.isPremium {
-                        Button {
-                            freemiumService.activatePremium()
-                            dismiss()
-                        } label: {
-                            HStack {
-                                Image(systemName: "crown.fill")
-                                Text("Activer Premium (Test)")
-                                Spacer()
-                                Text("GRATUIT")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                            }
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [wheelTrackBlue, wheelTrackBlue.opacity(0.8)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
-                    #endif
+
                     
                     // Footer
                     VStack(spacing: 8) {
-                        Text("• Abonnement renouvelé automatiquement")
-                        Text("• Annulation possible à tout moment")
-                        Text("• Essai gratuit de 7 jours")
+                        Text(L(CommonTranslations.autoRenewSubscription))
+                        Text(L(CommonTranslations.cancelAnytime))
+                        Text(L(CommonTranslations.freeTrial7Days))
                     }
                     .font(.caption2)
                     .foregroundColor(.secondary)
@@ -469,11 +459,11 @@ struct PremiumUpgradeView: View {
                 )
                 .ignoresSafeArea()
             )
-            .navigationTitle("Premium")
+            .navigationTitle(L(CommonTranslations.premiumBadge))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fermer") {
+                    Button(L(CommonTranslations.close)) {
                         dismiss()
                     }
                     .foregroundColor(wheelTrackBlue)
@@ -541,6 +531,99 @@ struct FeatureCard: View {
     }
 }
 
+
+
+// MARK: - Demo Pricing Option (App Store Screenshots)
+struct DemoPricingOptionView: View {
+    let title: String
+    let subtitle: String
+    let price: String
+    let originalPrice: String?
+    let isPopular: Bool
+    let action: () -> Void
+    
+    init(
+        title: String,
+        subtitle: String,
+        price: String,
+        originalPrice: String? = nil,
+        isPopular: Bool = false,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.price = price
+        self.originalPrice = originalPrice
+        self.isPopular = isPopular
+        self.action = action
+    }
+    
+    private let wheelTrackBlue = Color(red: 0.2, green: 0.7, blue: 1.0)
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 0) {
+                // Badge si populaire
+                if isPopular {
+                    HStack {
+                        Spacer()
+                        Text(L(CommonTranslations.popularBadge))
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(wheelTrackBlue)
+                            .clipShape(Capsule())
+                        Spacer()
+                    }
+                    .padding(.bottom, 8)
+                }
+                
+                VStack(spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(title)
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            Text(subtitle)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .trailing, spacing: 2) {
+                            if let originalPrice = originalPrice {
+                                Text(originalPrice)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .strikethrough()
+                            }
+                            
+                            Text(price)
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isPopular ? wheelTrackBlue : Color(.systemGray4), lineWidth: isPopular ? 2 : 1)
+                )
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
 struct PricingOptionView: View {
     let title: String
     let subtitle: String
@@ -583,7 +666,7 @@ struct PricingOptionView: View {
                 if isPopular {
                     HStack {
                         Spacer()
-                        Text("⭐ POPULAIRE")
+                        Text(L(CommonTranslations.popularBadge))
                             .font(.caption2)
                             .fontWeight(.bold)
                             .foregroundColor(.white)

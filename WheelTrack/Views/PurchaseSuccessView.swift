@@ -1,5 +1,6 @@
 import SwiftUI
 import StoreKit
+import Foundation
 
 /// Vue de confirmation affichée après un achat réussi
 struct PurchaseSuccessView: View {
@@ -31,12 +32,21 @@ struct PurchaseSuccessView: View {
                 
                 // Bouton de fermeture
                 Button("Parfait, continuer !") {
+                    // Approche double pour s'assurer que ça fonctionne en TestFlight
+                    
+                    // 1. Utiliser la méthode du FreemiumService (plus fiable)
+                    FreemiumService.shared.dismissPurchaseSuccessAndNavigateToDashboard()
+                    
+                    // 2. Envoyer aussi la notification directement (approche de secours)
+                    NotificationCenter.default.post(
+                        name: .navigateToDashboard,
+                        object: nil
+                    )
+                    
+                    // 3. Fermer la popup
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .font(.headline)
-                .fontWeight(.semibold)
+                .buttonStyle(PrimaryButtonStyle())
             }
             .padding(24)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
@@ -232,7 +242,7 @@ struct PurchaseSuccessView: View {
             if let product = storeKitService.product(for: .lifetimePurchase) {
                 return product.displayPrice
             }
-            return "19,99€" // Fallback
+            return "79,99€" // Fallback
         case .test:
             return "Gratuit"
         }
@@ -297,5 +307,5 @@ struct FeatureRow: View {
 // MARK: - Preview
 
 #Preview {
-    PurchaseSuccessView(purchaseType: .yearly, productID: "wheeltrack_premium_yearly")
+    PurchaseSuccessView(purchaseType: .yearly, productID: "com.andygrava.wheeltrack.premium.yearly")
 }

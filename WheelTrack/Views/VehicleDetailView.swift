@@ -323,8 +323,7 @@ struct VehicleMaintenanceTabView: View {
                             .foregroundColor(.primary)
                         
                         Button(VehicleDetailView.localText("add_maintenance", language: appLanguage), action: onAddMaintenance)
-                            .buttonStyle(.borderedProminent)
-                            .tint(.orange)
+                            .buttonStyle(PrimaryButtonStyle())
                     }
                     .padding(40)
                 } else {
@@ -392,8 +391,7 @@ struct VehicleExpensesTabView: View {
                             .foregroundColor(.primary)
                         
                         Button(VehicleDetailView.localText("add_expense", language: appLanguage), action: onAddExpense)
-                            .buttonStyle(.borderedProminent)
-                            .tint(.blue)
+                            .buttonStyle(PrimaryButtonStyle())
                     }
                     .padding(40)
                 } else {
@@ -502,8 +500,7 @@ struct VehicleRentalTabView: View {
                                 freemiumService.requestUpgrade(for: .rentalModule)
                             }
                         })
-                            .buttonStyle(.borderedProminent)
-                            .tint(.blue)
+                            .buttonStyle(PrimaryButtonStyle())
                     }
                     .padding(40)
                 } else {

@@ -28,23 +28,23 @@ Votre application a maintenant tous les composants nécessaires pour les paiemen
 2. Cliquez sur **"+"** pour ajouter chaque produit :
 
 #### **Produit 1 : Abonnement Mensuel**
-- **Product ID** : `wheeltrack_premium_monthly`
+- **Product ID** : `com.andygrava.wheeltrack.premium.monthly`
 - **Type** : Auto-Renewable Subscription
 - **Subscription Group** : Créer un nouveau groupe "Premium"
 - **Duration** : 1 Month
 - **Price** : 4.99€ (ou votre devise)
 
 #### **Produit 2 : Abonnement Annuel**
-- **Product ID** : `wheeltrack_premium_yearly`
+- **Product ID** : `com.andygrava.wheeltrack.premium.yearly`
 - **Type** : Auto-Renewable Subscription
 - **Subscription Group** : Même groupe "Premium"
 - **Duration** : 1 Year
 - **Price** : 49.99€ (ou votre devise)
 
 #### **Produit 3 : Achat à Vie**
-- **Product ID** : `wheeltrack_premium_lifetime`
+- **Product ID** : `com.andygrava.wheeltrack.premium.lifetime`
 - **Type** : Non-Consumable
-- **Price** : 19.99€ (ou votre devise)
+- **Price** : 79.99€ (ou votre devise)
 
 ### **Étape 3 : Obtenir votre Team ID**
 

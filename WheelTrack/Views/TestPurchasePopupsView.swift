@@ -7,7 +7,7 @@ public struct TestPurchasePopupsView: View {
     @StateObject private var storeKitService = StoreKitService.shared
     @State private var showPurchaseSuccess = false
     @State private var selectedPurchaseType: FreemiumService.PurchaseType = .monthly
-    @State private var selectedProductID = "wheeltrack_premium_monthly"
+    @State private var selectedProductID = "com.andygrava.wheeltrack.premium.monthly"
     
     public init() {}
     
@@ -83,33 +83,33 @@ public struct TestPurchasePopupsView: View {
                     type: .monthly,
                     title: "Premium Mensuel",
                     subtitle: "Abonnement renouvelé chaque mois",
-                    productID: "wheeltrack_premium_monthly",
+                    productID: "com.andygrava.wheeltrack.premium.monthly",
                     isSelected: selectedPurchaseType == .monthly
                 ) {
                     selectedPurchaseType = .monthly
-                    selectedProductID = "wheeltrack_premium_monthly"
+                    selectedProductID = "com.andygrava.wheeltrack.premium.monthly"
                 }
                 
                 PurchaseTypeOption(
                     type: .yearly,
                     title: "Premium Annuel",
                     subtitle: "Abonnement renouvelé chaque année",
-                    productID: "wheeltrack_premium_yearly",
+                    productID: "com.andygrava.wheeltrack.premium.yearly",
                     isSelected: selectedPurchaseType == .yearly
                 ) {
                     selectedPurchaseType = .yearly
-                    selectedProductID = "wheeltrack_premium_yearly"
+                    selectedProductID = "com.andygrava.wheeltrack.premium.yearly"
                 }
                 
                 PurchaseTypeOption(
                     type: .lifetime,
                     title: "Premium à Vie",
                     subtitle: "Achat unique, pas de renouvellement",
-                    productID: "wheeltrack_premium_lifetime",
+                    productID: "com.andygrava.wheeltrack.premium.lifetime",
                     isSelected: selectedPurchaseType == .lifetime
                 ) {
                     selectedPurchaseType = .lifetime
-                    selectedProductID = "wheeltrack_premium_lifetime"
+                    selectedProductID = "com.andygrava.wheeltrack.premium.lifetime"
                 }
                 
                 PurchaseTypeOption(

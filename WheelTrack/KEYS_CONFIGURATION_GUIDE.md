@@ -64,21 +64,21 @@ private let sharedSecret = "abc123def456789..." // ➜ Votre Shared Secret
 Dans App Store Connect, aller dans votre app ➜ **"Features"** ➜ **"In-App Purchases"** :
 
 ### **Produit 1 : Abonnement Mensuel**
-- **Product ID** : `wheeltrack_premium_monthly`
+- **Product ID** : `com.andygrava.wheeltrack.premium.monthly`
 - **Type** : Auto-Renewable Subscription
 - **Duration** : 1 Month
 - **Price** : 4,99 €
 
 ### **Produit 2 : Abonnement Annuel**
-- **Product ID** : `wheeltrack_premium_yearly`
+- **Product ID** : `com.andygrava.wheeltrack.premium.yearly`
 - **Type** : Auto-Renewable Subscription
 - **Duration** : 1 Year
 - **Price** : 49,99 €
 
 ### **Produit 3 : Achat à Vie**
-- **Product ID** : `wheeltrack_premium_lifetime`
+- **Product ID** : `com.andygrava.wheeltrack.premium.lifetime`
 - **Type** : Non-Consumable
-- **Price** : 19,99 €
+- **Price** : 79,99 €
 
 ---
 

@@ -9,6 +9,7 @@ struct PremiumPurchaseView: View {
     @State private var isProcessing = false
     @State private var showError = false
     @State private var errorMessage = ""
+
     
     var body: some View {
         NavigationStack {
@@ -105,17 +106,42 @@ struct PremiumPurchaseView: View {
                 .font(.system(size: 40))
                 .foregroundColor(.orange)
             
-            Text("Aucun produit disponible")
+            Text("Produits non disponibles")
                 .font(.headline)
             
+            Text("Les produits Premium seront disponibles après validation par Apple.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
             if let error = storeKitService.errorMessage {
-                Text("Erreur: \(error)")
-                    .font(.caption)
+                Text("Détails: \(error)")
+                    .font(.caption2)
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
+                    .padding(.top, 4)
             }
+            
+            Button {
+                Task {
+                    await storeKitService.loadProducts()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Réessayer")
+                }
+                .font(.subheadline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(.blue)
+                .cornerRadius(10)
+            }
+            .padding(.top, 8)
         }
-        .frame(height: 150)
+        .frame(height: 250)
+        .padding()
     }
     
     private var restorePurchasesButton: some View {
@@ -134,11 +160,13 @@ struct PremiumPurchaseView: View {
         .disabled(storeKitService.isLoading)
     }
     
+
+    
     private var legalFooter: some View {
         VStack(spacing: 8) {
             Text("• Abonnement renouvelé automatiquement")
-            Text("• Annulation possible à tout moment")
-            Text("• Essai gratuit de 7 jours")
+            Text("• Annulation possible à tout moment dans les Réglages")
+            Text("• Paiement sécurisé via App Store")
         }
         .font(.caption2)
         .foregroundColor(.secondary)
@@ -182,6 +210,18 @@ struct ProductCard: View {
                     .clipShape(Capsule())
             }
             
+            // Badge premium pour l'offre à vie
+            if product.id.contains("lifetime") {
+                Text("💎 PREMIUM")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(Color.purple)
+                    .clipShape(Capsule())
+            }
+            
             VStack(spacing: 8) {
                 Text(product.displayName)
                     .font(.headline)
@@ -199,7 +239,7 @@ struct ProductCard: View {
                 
                 // Prix mensuel équivalent pour l'abonnement annuel
                 if product.id.contains("yearly") {
-                    Text("4,08€/mois")
+                    Text("4,17€/mois")
                         .font(.caption)
                         .foregroundColor(.green)
                 }
@@ -216,8 +256,7 @@ struct ProductCard: View {
                 Button("Acheter") {
                     onPurchase()
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(PurchaseButtonStyle())
                 .disabled(isPurchased)
             }
         }
@@ -229,12 +268,14 @@ struct ProductCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(
-                    product.id.contains("yearly") ? .blue : Color(.systemGray4),
-                    lineWidth: product.id.contains("yearly") ? 2 : 1
+                    product.id.contains("yearly") ? Color.blue : (product.id.contains("lifetime") ? Color.purple : Color(.systemGray4)),
+                    lineWidth: (product.id.contains("yearly") || product.id.contains("lifetime")) ? 2 : 1
                 )
         )
     }
 }
+
+
 
 #Preview {
     PremiumPurchaseView()

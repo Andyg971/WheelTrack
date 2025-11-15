@@ -306,6 +306,86 @@ struct CommonTranslations {
     static let financialSettings = ("Paramètres financiers", "Financial Settings")
     static let preferences = ("Préférences", "Preferences")
     
+    // MARK: - Profile form fields
+    
+    // Personal Information
+    static let firstName = ("Prénom", "First Name")
+    static let lastName = ("Nom", "Last Name")
+    static let email = ("Email", "Email")
+    static let phoneNumber = ("Téléphone", "Phone Number")
+    static let dateOfBirth = ("Date de naissance", "Date of Birth")
+    static let personalInfoFooter = ("Ces informations sont utilisées pour vos documents officiels et vos assurances. L'email sert pour les notifications importantes.", "This information is used for your official documents and insurance. Email is used for important notifications.")
+    
+    // Address
+    static let streetAndNumber = ("Numéro et rue", "Street and Number")
+    static let city = ("Ville", "City")
+    static let postalCode = ("Code postal", "Postal Code")
+    static let country = ("Pays", "Country")
+    static let addressFooter = ("Votre adresse est utilisée pour localiser les garages les plus proches et pour vos documents officiels.", "Your address is used to locate the nearest garages and for your official documents.")
+    
+    // Driving License
+    static let drivingLicenseNumber = ("Numéro de permis", "License Number")
+    static let licenseObtainedDate = ("Date d'obtention", "Obtained Date")
+    static let licenseExpirationDate = ("Date d'expiration", "Expiration Date")
+    static let licenseInformation = ("Informations du permis", "License Information")
+    static let licenseInfoFooter = ("Ces informations sont essentielles pour la location de véhicules et les contrôles routiers.", "This information is essential for vehicle rental and road checks.")
+    static let authorizedCategories = ("Catégories autorisées", "Authorized Categories")
+    static let licenseCategoriesFooter = ("Sélectionnez les catégories de véhicules que vous êtes autorisé(e) à conduire.", "Select the vehicle categories you are authorized to drive.")
+    
+    // Insurance
+    static let insuranceCompany = ("Compagnie d'assurance", "Insurance Company")
+    static let policyNumber = ("Numéro de police", "Policy Number")
+    static let insuranceContactPhone = ("Téléphone assurance", "Insurance Contact Phone")
+    static let insuranceExpirationDate = ("Date d'expiration", "Expiration Date")
+    static let insuranceFooter = ("Ces informations sont cruciales en cas d'accident ou de sinistre. Vous recevrez des rappels avant l'expiration.", "This information is crucial in case of accident or claim. You will receive reminders before expiration.")
+    
+    // Professional
+    static let profession = ("Profession", "Profession")
+    static let company = ("Entreprise", "Company")
+    static let professionalUse = ("Usage professionnel", "Professional Use")
+    static let professionalUseFooter = ("Le pourcentage d'usage professionnel est utilisé pour calculer les déductions fiscales et la répartition des frais.", "The professional use percentage is used to calculate tax deductions and cost allocation.")
+    
+    // Preferences
+    static let currency = ("Devise", "Currency")
+    static let distanceUnit = ("Unité de distance", "Distance Unit")
+    static let fuelConsumption = ("Consommation carburant", "Fuel Consumption")
+    static let languageSetting = ("Langue", "Language")
+    static let unitsAndLanguage = ("Unités et langue", "Units and Language")
+    static let notifications = ("Notifications", "Notifications")
+    static let maintenanceReminders = ("Rappels maintenance", "Maintenance Reminders")
+    static let insuranceReminders = ("Rappels assurance", "Insurance Reminders")
+    static let licenseReminders = ("Rappels permis", "License Reminders")
+    static let notificationsFooter = ("Activez les notifications pour ne manquer aucune échéance importante.", "Enable notifications to not miss any important deadline.")
+    
+    // Financial Settings
+    static let vatRate = ("Taux de TVA", "VAT Rate")
+    static let professionalDeduction = ("Déduction professionnelle", "Professional Deduction")
+    static let monthlyVehicleBudget = ("Budget mensuel véhicule", "Monthly Vehicle Budget")
+    static let financialFooter = ("Ces paramètres sont utilisés pour les calculs automatiques de coûts et les rapports financiers.", "These settings are used for automatic cost calculations and financial reports.")
+    static let vat = ("TVA", "VAT")
+    static let deduction = ("Déduction", "Deduction")
+    static let budget = ("Budget", "Budget")
+    
+    // Currency names
+    static let euroCurrency = ("Euro (€)", "Euro (€)")
+    static let dollarCurrency = ("Dollar ($)", "Dollar ($)")
+    static let poundCurrency = ("Livre (£)", "Pound (£)")
+    static let swissFrancCurrency = ("Franc suisse (CHF)", "Swiss Franc (CHF)")
+    
+    // Languages
+    static let french = ("Français", "French")
+    static let english = ("English", "English")
+    static let spanish = ("Español", "Spanish")
+    static let german = ("Deutsch", "German")
+    
+    // License Categories
+    static let licenseCategoryA = ("Motos", "Motorcycles")
+    static let licenseCategoryB = ("Voitures particulières", "Passenger Cars")
+    static let licenseCategoryC = ("Poids lourds", "Heavy Vehicles")
+    static let licenseCategoryD = ("Transport en commun", "Public Transport")
+    static let licenseCategoryBE = ("Voiture avec remorque", "Car with Trailer")
+    static let licenseCategoryCE = ("Poids lourd avec remorque", "Heavy Vehicle with Trailer")
+    
     // MARK: - Tutorial translations
     
     // Tutorial - Page titles
@@ -366,6 +446,78 @@ struct CommonTranslations {
     static let dataError = ("Erreur de données", "Data Error")
     static let loadingData = ("Chargement des données...", "Loading data...")
     static let syncingData = ("Synchronisation en cours...", "Syncing data...")
+    
+    // MARK: - Premium Features Translations
+    static let premiumRequired = ("💎 Premium Requis", "💎 Premium Required")
+    static let wheeltrackPremium = ("💎 WHEELTRACK PREMIUM", "💎 WHEELTRACK PREMIUM")
+    static let unlockFullPotential = ("Débloquez tout le potentiel de WheelTrack", "Unlock the full potential of WheelTrack")
+    static let professionalManagement = ("Gestion professionnelle avec analytics avancés", "Professional management with advanced analytics")
+    static let unlimitedVehicles = ("Véhicules illimités", "Unlimited Vehicles")
+    static let manageFleetText = ("Gérez toute votre flotte", "Manage your entire fleet")
+    static let professionalAnalytics = ("Analytics professionnels", "Professional Analytics")
+    static let analyticsPro = ("Analytics Pro", "Analytics Pro")
+    static let detailedGraphs = ("Graphiques détaillés", "Detailed graphs")
+    static let fullRentalModule = ("Module Location complet", "Full Rental Module")
+    static let rentalModule = ("Module Location", "Rental Module")
+    static let contractsRevenue = ("Contrats & revenus", "Contracts & revenue")
+    static let iCloudSync = ("Synchronisation iCloud", "iCloud Sync")
+    static let syncIcloud = ("Sync iCloud", "Sync iCloud")
+    static let multiDevice = ("Multi-appareils", "Multi-device")
+    static let exportPdf = ("Export PDF", "PDF Export")
+    static let completeReports = ("Rapports complets", "Complete reports")
+    static let garagesPro = ("Garages Pro", "Pro Garages")
+    static let unlimitedFavorites = ("Favoris illimités", "Unlimited favorites")
+    
+    // Pricing Options
+    static let monthlyPremium = ("Premium Mensuel", "Monthly Premium")
+    static let billedMonthly = ("Facturé mensuellement", "Billed monthly")
+    static let yearlyPremium = ("Premium Annuel", "Yearly Premium")
+    static let billedYearly = ("Facturé annuellement", "Billed yearly")
+    static let lifetimePremium = ("Premium à Vie", "Lifetime Premium")
+    static let oneTimePurchase = ("Achat unique", "One-time purchase")
+    static let oneTimePurchaseAccess = ("Achat unique - Accès illimité", "One-time purchase - Unlimited access")
+    static let save18Percent = ("Économisez 18%", "Save 18%")
+    static let save17Percent = ("Économisez 17% - Facturation annuelle", "Save 17% - Yearly billing")
+    static let popularBadge = ("⭐ POPULAIRE", "⭐ POPULAR")
+    static let premiumBadge = ("Premium", "Premium")
+    
+    // Actions
+    static let seeAllOptions = ("Voir toutes les options", "See all options")
+    static let unlock = ("Débloquer", "Unlock")
+    static let availableWithPremium = ("Disponible avec Premium", "Available with Premium")
+    static let restorePurchases = ("Restaurer les achats", "Restore purchases")
+    
+    // Footer notes
+    static let autoRenewSubscription = ("• Abonnement renouvelé automatiquement", "• Subscription auto-renews")
+    static let cancelAnytime = ("• Annulation possible à tout moment", "• Cancel anytime")
+    static let freeTrial7Days = ("• Essai gratuit de 7 jours", "• 7-day free trial")
+    
+    // Loading states
+    static let loadingProducts = ("Chargement des produits...", "Loading products...")
+    static let noProducts = ("Aucun produit disponible", "No products available")
+    
+    // MARK: - Rental Contract Activation
+    static let futureStartDate = ("Date de début dans le futur", "Future start date")
+    static let startNow = ("Commencer maintenant", "Start now")
+    static let keepPlannedDate = ("Conserver la date prévue", "Keep planned date")
+    
+    // MARK: - Premium Feature Titles
+    static let featureUnlimitedVehiclesTitle = ("Véhicules illimités", "Unlimited Vehicles")
+    static let featureAdvancedAnalyticsTitle = ("Analytics avancés", "Advanced Analytics")
+    static let featureRentalModuleTitle = ("Module Location", "Rental Module")
+    static let featurePdfExportTitle = ("Export PDF", "PDF Export")
+    static let featureGarageModuleTitle = ("Garages favoris", "Favorite Garages")
+    static let featureMaintenanceRemindersTitle = ("Rappels maintenance", "Maintenance Reminders")
+    static let featureCloudSyncTitle = ("Synchronisation iCloud", "iCloud Sync")
+    
+    // MARK: - Premium Feature Descriptions
+    static let featureUnlimitedVehiclesDesc = ("Ajoutez autant de véhicules que vous voulez", "Add as many vehicles as you want")
+    static let featureAdvancedAnalyticsDesc = ("Graphiques détaillés et statistiques complètes", "Detailed charts and complete statistics")
+    static let featureRentalModuleDesc = ("Gérez la location de vos véhicules", "Manage your vehicle rentals")
+    static let featurePdfExportDesc = ("Exportez vos données en PDF", "Export your data to PDF")
+    static let featureGarageModuleDesc = ("Sauvegardez vos garages favoris", "Save your favorite garages")
+    static let featureMaintenanceRemindersDesc = ("Rappels illimités pour l'entretien", "Unlimited maintenance reminders")
+    static let featureCloudSyncDesc = ("Synchronisez vos données sur tous vos appareils", "Sync your data across all your devices")
 }
 
 /// Helper pour accéder facilement aux traductions

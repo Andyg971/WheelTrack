@@ -155,13 +155,13 @@ struct UserProfileView: View {
 
 // MARK: - Section du profil
 enum ProfileSection: String, CaseIterable, Identifiable {
-    case personalInfo = "Informations personnelles"
-    case address = "Adresse"
-    case drivingLicense = "Permis de conduire"
-    case insurance = "Assurance principale"
-    case professional = "Informations professionnelles"
-    case preferences = "Préférences"
-    case financial = "Paramètres financiers"
+    case personalInfo
+    case address
+    case drivingLicense
+    case insurance
+    case professional
+    case preferences
+    case financial
     
     var id: String { self.rawValue }
     

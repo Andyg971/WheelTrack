@@ -128,4 +128,8 @@ iOSInjectionProject/
 *.log
 *.plist
 !Info.plist
-!LaunchScreen.storyboard 
+!LaunchScreen.storyboard
+!Secrets.sample.plist
+
+# Secrets - Ne jamais committer la vraie clé API
+WheelTrack/Secrets.plist 
