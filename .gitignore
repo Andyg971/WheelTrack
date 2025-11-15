@@ -132,4 +132,23 @@ iOSInjectionProject/
 !Secrets.sample.plist
 
 # Secrets - Ne jamais committer la vraie clé API
-WheelTrack/Secrets.plist 
+WheelTrack/Secrets.plist
+**/Secrets.plist
+*.secrets.plist
+*secrets*.plist
+
+# Clés API et tokens
+*api_key*
+*API_KEY*
+*secret*
+*SECRET*
+*token*
+*TOKEN*
+*.key
+*.keys
+
+# Fichiers de configuration sensibles
+.env
+.env.local
+config.json
+secrets.json 
