@@ -4,13 +4,16 @@
 
 [![Swift](https://img.shields.io/badge/Swift-5.0+-orange.svg)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-iOS%2016+-blue.svg)](https://developer.apple.com/swiftui/)
-[![Platform](https://img.shields.io/badge/Platform-iOS%2016+-lightgrey.svg)](https://developer.apple.com/ios/)
+[![Platform](https://img.shields.io/badge/Platform-iOS%2016+%20%7C%20iPadOS%2016+-lightgrey.svg)](https://developer.apple.com/ios/)
+[![Device](https://img.shields.io/badge/Device-iPhone%20%7C%20iPad-blue.svg)](https://www.apple.com)
 [![CloudKit](https://img.shields.io/badge/CloudKit-Enabled-green.svg)](https://developer.apple.com/icloud/cloudkit/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## 🎯 Vision
 
 WheelTrack révolutionne la gestion automobile en offrant une expérience utilisateur exceptionnelle alliant simplicité et puissance. Que vous soyez propriétaire d'un véhicule personnel, gestionnaire d'une flotte ou entrepreneur dans la location automobile, WheelTrack s'adapte à vos besoins.
+
+**📱 Optimisé pour iPhone et iPad** - Interface adaptative qui tire parti du grand écran de l'iPad pour une gestion encore plus efficace de votre parc automobile.
 
 ## ✨ Fonctionnalités Principales
 
@@ -115,6 +118,21 @@ WheelTrack révolutionne la gestion automobile en offrant une expérience utilis
 - **Partage système** - Export et partage natifs
 - **Siri Shortcuts** - Intégration avec l'assistant vocal
 - **Haptiques** - Retour tactile pour une meilleure UX
+
+## 📱 **Compatibilité Multi-Appareils**
+
+### iPhone & iPad
+WheelTrack est une **application universelle** optimisée pour :
+- **iPhone** (iOS 16+) - Interface compacte et intuitive
+- **iPad** (iPadOS 16+) - Interface étendue avec support multi-colonnes
+- **Orientations** - Portrait et paysage sur iPad pour une flexibilité maximale
+- **Split View & Slide Over** - Support complet du multitâche iPad
+- **Keyboard shortcuts** - Raccourcis clavier pour iPad
+
+### Design Adaptatif
+- **Interface responsive** qui s'adapte automatiquement à la taille d'écran
+- **Optimisation iPad** : profitez de colonnes multiples, vues détaillées côte à côte
+- **Synchronisation CloudKit** entre tous vos appareils Apple (iPhone, iPad, Mac)
 
 ## 👥 **Public Cible**
 
@@ -270,7 +288,8 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 - **Langage principal** : Swift (95%)
 - **Lignes de code** : ~15,000
 - **Tests unitaires** : 80+ tests
-- **Compatibilité** : iOS 16.0+
+- **Compatibilité** : iOS 16.0+ | iPadOS 16.0+
+- **Appareils** : iPhone, iPad
 - **Architectures** : arm64, x86_64
 
 ---
