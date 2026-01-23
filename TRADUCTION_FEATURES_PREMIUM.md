@@ -106,7 +106,7 @@ Manage your vehicle rentals
 ## 📱 Toutes les Features Traduites
 
 | Feature | Français | English |
-|---------|----------|---------|
+|---------|----------|---------|  
 | **Unlimited Vehicles** | Véhicules illimités | Unlimited Vehicles |
 | | Ajoutez autant de véhicules que vous voulez | Add as many vehicles as you want |
 | **Advanced Analytics** | Analytics avancés | Advanced Analytics |
@@ -148,9 +148,8 @@ Manage your vehicle rentals
 
 ---
 
-**Date de modification** : 2 novembre 2025  
+**Date de modification** : 2 novembre 2024  
 **Fichiers modifiés** : 2  
 **Traductions ajoutées** : 14 (7 titres + 7 descriptions)  
 **Erreurs de compilation** : 0  
 **Statut** : ✅ Complété et testé sans erreurs
-

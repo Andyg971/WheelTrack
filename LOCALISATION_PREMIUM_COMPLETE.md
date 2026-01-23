@@ -161,8 +161,7 @@ Maintenant, **quand l'utilisateur change la langue en anglais** :
 
 ---
 
-**Date de modification** : 2 novembre 2025  
+**Date de modification** : 2 novembre 2024  
 **Fichiers modifiés** : 3  
 **Traductions ajoutées** : 40+  
 **Statut** : ✅ Complété et testé sans erreurs de compilation
-
